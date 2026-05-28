@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+phantom_jobs/
+.claude/
+*.mp4

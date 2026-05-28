@@ -1,0 +1,4 @@
+flask
+replicate
+requests
+pillow

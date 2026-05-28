@@ -1,0 +1,261 @@
+{% raw %}<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sophie · Mails VA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+{% endraw %}<script>window.__SB_URL='{{ supabase_url }}';window.__SB_KEY='{{ supabase_key }}';</script>{% raw %}
+<script>
+  var sb = window.supabase.createClient(window.__SB_URL, window.__SB_KEY);
+  window.SOPHIE_MEMBER = { role: 'admin', pages: ['acquisition','flotte','emails','tasks','strategies','ads','proxy','mails','members'], workspace_ids: [] };
+</script>
+
+<style>
+  :root {
+    --bg:#fafaf9; --card:#fff; --border:#ebeae5; --border-strong:#d9d7d0;
+    --text:#1a1a19; --text-2:#5c5a55; --text-3:#8e8b84; --text-4:#b8b5ad;
+    --accent-soft:#f4f3ef; --hover:#f6f5f1;
+    --positive:#15803d; --positive-bg:#ecfdf5;
+    --negative:#b91c1c; --negative-bg:#fef2f2;
+    --info:#1d4ed8; --info-bg:#eff6ff;
+    --warning:#b45309; --warning-bg:#fffbeb;
+    --radius:10px;
+    --shadow-sm:0 1px 2px rgba(20,19,17,0.04);
+    --shadow:0 1px 3px rgba(20,19,17,0.06);
+  }
+  html[data-theme="dark"] {
+    --bg:#0e0e0c; --card:#181816; --border:#2a2823; --border-strong:#3a3730;
+    --text:#f4ede0; --text-2:#b5ad9d; --text-3:#7d7567; --text-4:#50493e;
+    --accent-soft:#1f1d18; --hover:#1f1d18;
+    --positive:#34d399; --positive-bg:rgba(52,211,153,0.12);
+    --negative:#f87171; --negative-bg:rgba(248,113,113,0.12);
+    --info:#60a5fa; --info-bg:rgba(96,165,250,0.12);
+    --warning:#fcd34d; --warning-bg:rgba(252,211,77,0.10);
+  }
+  * { box-sizing:border-box; }
+  html { background:var(--bg); }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:"Geist",-apple-system,sans-serif; font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  .mono { font-family:"Geist Mono",monospace; font-feature-settings:"tnum" 1; }
+  .layout { max-width:1240px; margin:0 auto; padding:32px 32px 96px; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; padding:10px 0 28px; border-bottom:1px solid var(--border); margin-bottom:28px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; font-size:14px; letter-spacing:-0.01em; }
+  .brand-logo { width:24px; height:24px; background:var(--text); color:var(--bg); border-radius:6px; display:grid; place-items:center; font-weight:600; font-size:12px; }
+  nav.tabs { display:flex; gap:4px; margin-left:18px; }
+  nav.tabs a { padding:5px 10px; border-radius:6px; font-size:13px; font-weight:500; color:var(--text-3); text-decoration:none; transition:all .15s; }
+  nav.tabs a.active { color:var(--text); background:var(--accent-soft); }
+  nav.tabs a:hover { color:var(--text); }
+  .theme-toggle { width:32px; height:32px; display:grid; place-items:center; border:1px solid var(--border); background:var(--card); border-radius:8px; cursor:pointer; color:var(--text-2); }
+  .theme-toggle svg { width:15px; height:15px; }
+
+  .header { margin-bottom:24px; }
+  .header h1 { font-size:26px; font-weight:600; margin:0 0 4px; letter-spacing:-0.02em; }
+  .header .sub { color:var(--text-3); font-size:13px; }
+
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+  .stat-label { color:var(--text-3); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; font-weight:500; display:flex; align-items:center; gap:6px; }
+  .stat-label .dot { width:8px; height:8px; border-radius:50%; }
+  .stat-value { font-size:28px; font-weight:600; letter-spacing:-0.02em; margin-top:6px; font-variant-numeric:tabular-nums; }
+
+  .toolbar { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .search { flex:1; min-width:200px; position:relative; }
+  .search input { width:100%; font-family:inherit; font-size:13px; padding:9px 12px 9px 34px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); outline:none; }
+  .search input:focus { border-color:var(--text-2); box-shadow:0 0 0 3px var(--accent-soft); }
+  .search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--text-3); }
+  .seg { display:inline-flex; padding:3px; background:var(--accent-soft); border:1px solid var(--border); border-radius:8px; }
+  .seg button { border:0; background:transparent; font-family:inherit; font-size:12px; font-weight:500; color:var(--text-2); padding:5px 12px; border-radius:6px; cursor:pointer; }
+  .seg button.active { background:var(--card); color:var(--text); box-shadow:var(--shadow-sm); }
+
+  .table-wrap { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .table-scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; min-width:600px; }
+  th, td { text-align:left; padding:10px 16px; font-size:13px; border-bottom:1px solid var(--border); }
+  th { color:var(--text-3); font-weight:500; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; position:sticky; top:0; background:var(--card); }
+  tr:hover td { background:var(--hover); }
+  td.idx { color:var(--text-4); font-family:"Geist Mono",monospace; font-size:12px; width:40px; }
+  td.email { font-family:"Geist Mono",monospace; font-size:13px; }
+  td.pwd { font-family:"Geist Mono",monospace; font-size:12px; color:var(--text-2); }
+  .copy-btn { background:none; border:0; cursor:pointer; color:var(--text-4); padding:2px 5px; border-radius:4px; font-size:11px; margin-left:6px; }
+  .copy-btn:hover { background:var(--accent-soft); color:var(--text); }
+  .status-select { font-family:inherit; font-size:12px; font-weight:500; padding:5px 10px; border-radius:6px; border:1px solid var(--border); cursor:pointer; outline:none; }
+  .status-select.utilise { background:var(--positive-bg); color:var(--positive); border-color:transparent; }
+  .status-select.verif { background:var(--warning-bg); color:var(--warning); border-color:transparent; }
+  .status-select.rien { background:var(--card); color:var(--text-3); }
+  .empty { padding:40px; text-align:center; color:var(--text-4); font-size:13px; }
+  @media (max-width:900px){ .layout{padding:20px;} .stats{grid-template-columns:repeat(2,1fr);} }
+</style>
+{% endraw %}
+
+</head>
+<body>
+<!-- SOPHIE UNIFIED NAV -->
+<div id="sophie-supernav" style="position:fixed;top:0;left:0;right:0;z-index:2147483600;background:rgba(10,10,8,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 20px;font-family:'Geist',-apple-system,sans-serif;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:40px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;padding:4px 10px 4px 6px;border-radius:6px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+        <span style="width:20px;height:20px;background:#f4ede0;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#0e0e0c;">S</span>
+        <span style="color:#f4ede0;font-size:12px;font-weight:500;letter-spacing:-0.01em;">Sophie</span>
+      </a>
+      <span style="color:rgba(255,255,255,0.15);font-size:14px;margin:0 2px;">/</span>
+      <a href="/" id="_snLanding" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Landing</a>
+      <a href="/dashboard" id="_snDashboard" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Dashboard</a>
+      <a href="/crea" id="_snCrea" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Crea</a>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var p=location.pathname;
+  var id=p.startsWith('/dashboard')?'_snDashboard':p.startsWith('/crea')?'_snCrea':'_snLanding';
+  var el=document.getElementById(id);
+  if(el){el.style.color='#f4ede0';el.style.background='rgba(255,255,255,0.08)';el.classList.add('_sn-active');}
+})();
+</script>
+<style>body{padding-top:40px !important;}</style>
+<!-- /SOPHIE UNIFIED NAV -->
+{% raw %}
+<div class="layout">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">S</div>
+      Sophie
+      <nav class="tabs">
+        <a href="/dashboard">Acquisition</a>
+        <a href="/dashboard/flotte">Flotte</a>
+        <a href="/dashboard/emails">Emails</a>
+        <a href="/dashboard/tasks">Tâches</a>
+        <a href="/dashboard/strategies">Stratégies</a>
+        <a href="/dashboard/ads">Ads</a>
+        <a href="/dashboard/proxy">Proxy</a>
+        <a href="/dashboard/mails-va" class="active">Mails VA</a>
+        <a href="/dashboard/members">Membres</a>
+      </nav>
+    </div>
+    <button class="theme-toggle" id="themeToggle">
+      <svg id="iconSun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.4 1.4M11.55 11.55l1.4 1.4M3.05 12.95l1.4-1.4M11.55 4.45l1.4-1.4"/></svg>
+      <svg id="iconMoon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 9a5 5 0 01-6-6 5 5 0 106 6z"/></svg>
+    </button>
+  </div>
+
+  <div class="header">
+    <h1>Mails VA</h1>
+    <div class="sub">Gère le statut des comptes mail. Sauvegarde automatique.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-value" id="stTotal">—</div></div>
+    <div class="stat"><div class="stat-label"><span class="dot" style="background:var(--positive)"></span>Utilisés</div><div class="stat-value" id="stUtil">—</div></div>
+    <div class="stat"><div class="stat-label"><span class="dot" style="background:var(--warning)"></span>À vérifier</div><div class="stat-value" id="stVerif">—</div></div>
+    <div class="stat"><div class="stat-label"><span class="dot" style="background:var(--text-4)"></span>Restants</div><div class="stat-value" id="stRien">—</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+      <input id="searchInput" placeholder="Rechercher un email..." />
+    </div>
+    <div class="seg" id="filterSeg">
+      <button data-f="all" class="active">Tous</button>
+      <button data-f="rien">Restants</button>
+      <button data-f="verif">À vérif</button>
+      <button data-f="utilise">Utilisés</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th class="idx">#</th><th>Email</th><th>Mot de passe</th><th>Statut</th></tr></thead>
+        <tbody id="mailsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* sb already initialised in <head> */
+
+
+
+const THEME_KEY='sophie_theme';
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('iconSun').style.display=t==='dark'?'':'none';document.getElementById('iconMoon').style.display=t==='dark'?'none':'';}
+applyTheme(localStorage.getItem(THEME_KEY)||'light');
+document.getElementById('themeToggle').onclick=()=>{const c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';localStorage.setItem(THEME_KEY,c);applyTheme(c);};
+
+let mails = [];
+let filterStatus = 'all';
+let search = '';
+const STATUS_LABEL = { utilise:'Utilisé', verif:'Vérif', rien:'Rien' };
+
+async function reload() {
+  const { data } = await sb.from('va_mails').select('*').order('position');
+  mails = data || [];
+}
+
+function renderStats() {
+  const util = mails.filter(m=>m.status==='utilise').length;
+  const verif = mails.filter(m=>m.status==='verif').length;
+  const rien = mails.filter(m=>m.status==='rien').length;
+  document.getElementById('stTotal').textContent = mails.length;
+  document.getElementById('stUtil').textContent = util;
+  document.getElementById('stVerif').textContent = verif;
+  document.getElementById('stRien').textContent = rien;
+}
+
+function visible() {
+  return mails.filter(m => {
+    if (filterStatus !== 'all' && m.status !== filterStatus) return false;
+    if (search && !m.email.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+}
+
+function renderTable() {
+  const list = visible();
+  const tbody = document.getElementById('mailsBody');
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">Aucun résultat</td></tr>'; return; }
+  tbody.innerHTML = list.map((m, i) => `
+    <tr data-id="${m.id}">
+      <td class="idx">${m.position+1}</td>
+      <td class="email">${m.email}<button class="copy-btn" data-copy="${m.email.replace(/"/g,'&quot;')}">copier</button></td>
+      <td class="pwd">${m.password||'—'}<button class="copy-btn" data-copy="${(m.password||'').replace(/"/g,'&quot;')}">copier</button></td>
+      <td>
+        <select class="status-select ${m.status}" data-status="${m.id}">
+          <option value="rien" ${m.status==='rien'?'selected':''}>Rien</option>
+          <option value="verif" ${m.status==='verif'?'selected':''}>Vérif</option>
+          <option value="utilise" ${m.status==='utilise'?'selected':''}>Utilisé</option>
+        </select>
+      </td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('[data-status]').forEach(sel => {
+    sel.onchange = async () => {
+      const id = sel.dataset.status;
+      const m = mails.find(x=>x.id===id);
+      m.status = sel.value;
+      sel.className = 'status-select ' + sel.value;
+      await sb.from('va_mails').update({ status: sel.value }).eq('id', id);
+      renderStats();
+    };
+  });
+  tbody.querySelectorAll('[data-copy]').forEach(b => {
+    b.onclick = () => { navigator.clipboard.writeText(b.dataset.copy); const o=b.textContent; b.textContent='✓'; setTimeout(()=>b.textContent=o,900); };
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e => { search = e.target.value; renderTable(); });
+document.querySelectorAll('#filterSeg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#filterSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); filterStatus = b.dataset.f; renderTable();
+});
+
+(async () => { await reload(); renderStats(); renderTable(); })();
+</script>
+<script src="/static/cs.js"></script>
+</body>
+</html>
+{% endraw %}
