@@ -1,0 +1,293 @@
+{% raw %}<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ConquerorZ · Membres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endraw %}<script>window.__SB_URL='{{ supabase_url }}';window.__SB_KEY='{{ supabase_key }}';</script>{% raw %}
+<style>
+  :root {
+    --bg:#FAFAF9; --card:#FFFFFF; --border:#E8E6E1; --border-strong:#D4D1CB;
+    --ink:#16150F; --muted:#615F58; --subtle:#94908A; --muted-bg:#F4F3F1;
+    --accent:#3B9DF7; --accent-deep:#1F7BD6; --accent-soft:#E4F1FE;
+    --red:#E5484D; --red-bg:#FFF0F0;
+    --green:#15803d; --green-bg:#ecfdf5;
+    --radius:10px;
+    --shadow:0 1px 3px rgba(0,0,0,0.06);
+    --shadow-lg:0 12px 32px rgba(0,0,0,0.10);
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); }
+  body {
+    font-family:'Schibsted Grotesk',system-ui,-apple-system,sans-serif;
+    color:var(--ink); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .layout { max-width:900px; margin:0 auto; padding:32px 28px 64px; }
+
+  .header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; gap:16px; }
+  .header h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; margin:0 0 4px; }
+  .header .sub { color:var(--subtle); font-size:13px; }
+
+  .btn { font-family:inherit; font-size:12px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--ink); cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
+  .btn:hover { border-color:var(--border-strong); background:var(--muted-bg); }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.primary:hover { background:var(--accent-deep); }
+  .btn.danger { color:var(--red); }
+  .btn.danger:hover { background:var(--red-bg); }
+  .btn svg { width:14px; height:14px; }
+
+  .table-wrap { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { text-align:left; padding:12px 16px; font-size:13px; border-bottom:1px solid var(--border); }
+  th { color:var(--subtle); font-weight:600; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; background:var(--muted-bg); }
+  tr:last-child td { border-bottom:0; }
+  tr:hover td { background:rgba(59,157,247,0.03); }
+
+  .avatar { width:28px; height:28px; border-radius:50%; background:var(--accent-soft); color:var(--accent-deep); font-weight:700; font-size:11px; display:inline-grid; place-items:center; margin-right:10px; vertical-align:middle; }
+  td.name { font-weight:600; }
+  td.email { font-size:12px; color:var(--muted); letter-spacing:-0.01em; }
+
+  .badge { display:inline-flex; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; }
+  .badge-admin { background:var(--accent-soft); color:var(--accent-deep); }
+  .badge-member { background:var(--muted-bg); color:var(--subtle); }
+
+  .svc-chips { display:flex; flex-wrap:wrap; gap:4px; }
+  .svc-chip { font-size:10px; padding:3px 8px; border-radius:5px; font-weight:600; }
+  .svc-chip.landing { background:#FFF7ED; color:#C2410C; }
+  .svc-chip.dashboard { background:var(--accent-soft); color:var(--accent-deep); }
+  .svc-chip.crea { background:#F5F3FF; color:#7C3AED; }
+
+  .row-actions { display:flex; gap:4px; justify-content:flex-end; }
+  .row-actions button { background:none; border:0; cursor:pointer; padding:5px 8px; border-radius:6px; color:var(--subtle); font-size:11px; font-weight:600; font-family:inherit; }
+  .row-actions button:hover { background:var(--muted-bg); color:var(--ink); }
+  .row-actions button.del:hover { background:var(--red-bg); color:var(--red); }
+
+  .empty { text-align:center; padding:48px; color:var(--subtle); font-size:14px; }
+
+  /* Modal */
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.45); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:200; }
+  .modal-bg.show { display:flex; }
+  .modal { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:28px; width:100%; max-width:460px; box-shadow:var(--shadow-lg); }
+  .modal h3 { margin:0 0 4px; font-size:18px; font-weight:700; letter-spacing:-0.01em; }
+  .modal-sub { color:var(--subtle); font-size:12px; margin-bottom:20px; }
+  .form-grid { display:grid; gap:14px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; font-weight:700; color:var(--subtle); text-transform:uppercase; letter-spacing:0.04em; }
+  .field input, .field select {
+    font-family:inherit; font-size:13px; padding:9px 12px;
+    border-radius:8px; border:1px solid var(--border); background:var(--card);
+    color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s;
+  }
+  .field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,157,247,0.15); }
+
+  .svc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .svc-check {
+    display:flex; align-items:center; gap:8px; padding:10px 12px;
+    border:1px solid var(--border); border-radius:8px; cursor:pointer;
+    user-select:none; font-size:13px; font-weight:500; transition:all .15s;
+  }
+  .svc-check:hover { background:var(--muted-bg); }
+  .svc-check input:checked + span { color:var(--accent-deep); font-weight:600; }
+  .svc-check:has(input:checked) { border-color:var(--accent); background:var(--accent-soft); }
+
+  .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:22px; padding-top:16px; border-top:1px solid var(--border); }
+  .modal-footer .btn.danger { margin-right:auto; }
+
+  .msg { font-size:12px; padding:8px 12px; border-radius:8px; margin-top:12px; font-weight:500; }
+  .msg.ok { background:var(--green-bg); color:var(--green); }
+  .msg.err { background:var(--red-bg); color:var(--red); }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="header">
+    <div>
+      <h1>Membres</h1>
+      <div class="sub">Ajoute des membres et choisis leurs acc&egrave;s par service.</div>
+    </div>
+    <button class="btn primary" id="inviteBtn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      Ajouter
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Membre</th><th>Email</th><th>R&ocirc;le</th><th>Services</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none;">Aucun membre pour l'instant</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Ajouter un membre</h3>
+    <div class="modal-sub" id="modalSub">Cr&eacute;e un compte avec email et mot de passe.</div>
+    <input type="hidden" id="mId" />
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="field"><label>Nom</label><input id="mName" placeholder="Marie Dupont" /></div>
+        <div class="field"><label>Email</label><input id="mEmail" type="email" placeholder="marie@email.com" /></div>
+      </div>
+      <div class="field" id="pwField">
+        <label>Mot de passe</label>
+        <input id="mPassword" type="text" placeholder="min 6 caract&egrave;res" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>R&ocirc;le</label>
+        <select id="mRole">
+          <option value="member">Membre</option>
+          <option value="admin">Admin (acc&egrave;s total + gestion membres)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Services accessibles</label>
+        <div class="svc-grid">
+          <label class="svc-check"><input type="checkbox" value="landing" /><span>Landing</span></label>
+          <label class="svc-check"><input type="checkbox" value="dashboard" /><span>Dashboard</span></label>
+          <label class="svc-check"><input type="checkbox" value="crea" /><span>Cr&eacute;a</span></label>
+        </div>
+      </div>
+    </div>
+    <div id="modalMsg"></div>
+    <div class="modal-footer">
+      <button class="btn danger" id="delBtn" style="display:none;">Retirer</button>
+      <button class="btn" data-close>Fermer</button>
+      <button class="btn primary" id="saveBtn">Enregistrer & Inviter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SVC_LABELS = { landing:'Landing', dashboard:'Dashboard', crea:'Créa' };
+const SVC_LIST = ['landing','dashboard','crea'];
+let members = [];
+
+function initials(s){ return (s||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase(); }
+
+async function loadMembers(){
+  const r = await fetch('/api/members');
+  const j = await r.json();
+  members = j.members || [];
+  render();
+}
+
+function render(){
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+  if(!members.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = members.map(m => {
+    const svcs = m.role==='admin' ? SVC_LIST : (m.services||[]);
+    return `<tr>
+      <td class="name"><span class="avatar">${initials(m.name)}</span>${m.name||''}</td>
+      <td class="email">${m.email}</td>
+      <td><span class="badge badge-${m.role}">${m.role}</span></td>
+      <td><div class="svc-chips">${svcs.map(s=>`<span class="svc-chip ${s}">${SVC_LABELS[s]||s}</span>`).join('')}</div></td>
+      <td><div class="row-actions"><button data-edit="${m.id}">Modifier</button><button class="del" data-del="${m.id}">Retirer</button></div></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openModal(b.dataset.edit));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if(!confirm('Retirer ce membre ?')) return;
+    await fetch('/api/members/'+b.dataset.del, {method:'DELETE'});
+    await loadMembers();
+  });
+}
+
+function openModal(id){
+  const isNew = !id;
+  const m = isNew ? null : members.find(x=>x.id===id);
+  document.getElementById('modalTitle').textContent = isNew ? 'Ajouter un membre' : 'Modifier le membre';
+  document.getElementById('modalSub').textContent = isNew
+    ? "Crée un compte avec email et mot de passe."
+    : "Modifie les permissions de ce membre.";
+  document.getElementById('mId').value = id||'';
+  document.getElementById('mName').value = m?.name||'';
+  document.getElementById('mEmail').value = m?.email||'';
+  document.getElementById('mEmail').disabled = !isNew;
+  document.getElementById('pwField').style.display = isNew ? '' : 'none';
+  document.getElementById('mPassword').value = '';
+  document.getElementById('mRole').value = m?.role||'member';
+  document.getElementById('delBtn').style.display = isNew ? 'none' : 'inline-flex';
+  document.getElementById('saveBtn').textContent = isNew ? 'Créer le compte' : 'Enregistrer';
+  document.getElementById('modalMsg').innerHTML = '';
+
+  const svcs = m?.services || [];
+  document.querySelectorAll('.svc-check input').forEach(cb => {
+    cb.checked = isNew ? true : svcs.includes(cb.value);
+  });
+
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+
+document.getElementById('inviteBtn').onclick = () => openModal(null);
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeModal);
+document.getElementById('modal').addEventListener('click', e => { if(e.target.id==='modal') closeModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+document.getElementById('delBtn').onclick = async () => {
+  const id = document.getElementById('mId').value;
+  if(!id || !confirm('Retirer ce membre ?')) return;
+  await fetch('/api/members/'+id, {method:'DELETE'});
+  closeModal();
+  await loadMembers();
+};
+
+document.getElementById('saveBtn').onclick = async () => {
+  const id = document.getElementById('mId').value;
+  const name = document.getElementById('mName').value.trim();
+  const email = document.getElementById('mEmail').value.trim().toLowerCase();
+  const role = document.getElementById('mRole').value;
+  const services = Array.from(document.querySelectorAll('.svc-check input:checked')).map(i=>i.value);
+  const password = document.getElementById('mPassword').value;
+
+  if(!name||!email){ showMsg('Nom et email requis','err'); return; }
+
+  if(id){
+    // Update
+    const r = await fetch('/api/members/'+id, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, role, services})
+    });
+    const j = await r.json();
+    if(j.ok){ showMsg('Enregistré','ok'); await loadMembers(); }
+    else showMsg(j.error||'Erreur','err');
+  } else {
+    // Create account
+    if(!password || password.length < 6){ showMsg('Mot de passe requis (6 car. min)','err'); return; }
+    const r = await fetch('/api/members', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, email, role, services, password})
+    });
+    const j = await r.json();
+    if(j.ok){
+      showMsg('Compte créé !','ok');
+      await loadMembers();
+      setTimeout(closeModal, 1500);
+    } else {
+      showMsg(j.error||'Erreur','err');
+    }
+  }
+};
+
+function showMsg(txt,type){
+  document.getElementById('modalMsg').innerHTML = `<div class="msg ${type}">${txt}</div>`;
+}
+
+loadMembers();
+</script>
+</body>
+</html>
+{% endraw %}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sophie · Centrale</title>
+<title>ConquerorZ · Centrale</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -40,7 +40,9 @@
   .sb-item svg{ width:17px; height:17px; flex:none; opacity:.85; }
   .sb-item.active svg{ opacity:1; }
   .sb-item .cnt{ margin-left:auto; font-size:11px; font-weight:600; color:var(--subtle); }
-  .sb-foot{ border-top:1px solid var(--border); padding:12px 18px; font-size:12px; color:var(--subtle); }
+  .sb-foot{ border-top:1px solid var(--border); padding:12px 18px; font-size:12px; color:var(--subtle); display:flex; align-items:center; justify-content:space-between; }
+  .sb-foot a.logout{ color:var(--subtle); text-decoration:none; font-weight:500; font-size:11px; padding:4px 8px; border-radius:6px; transition:all .14s; }
+  .sb-foot a.logout:hover{ background:var(--muted-bg); color:var(--ink); }
 
   /* ---- Main ---- */
   .main{ display:flex; flex-direction:column; min-width:0; min-height:0; background:var(--card); }
@@ -75,7 +77,10 @@
       <div class="sb-brand">Conqueror<span style="color:var(--accent)">Z</span></div>
     </div>
     <div class="sb-scroll" id="nav"></div>
-    <div class="sb-foot"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="13607c637b7a7653606766777a7c3d7561">[email&#160;protected]</a></div>
+    <div class="sb-foot">
+      <span id="userEmail"></span>
+      <a class="logout" href="/logout">D&eacute;connexion</a>
+    </div>
   </aside>
   <main class="main">
     <div class="topbar">
@@ -98,6 +103,10 @@
 
 
 <script>
+const USER_SERVICES = {{ user_services|safe }};
+const USER_EMAIL = '{{ user_email }}';
+const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+
 const IC = {
   home:'<path d="M3 9.5 12 3l9 6.5V21H3z"/><path d="M9 22V12h6v10"/>',
   chart:'<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
@@ -115,12 +124,14 @@ const IC = {
 };
 function ic(n){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]||''}</svg>`; }
 
-const GROUPS = [
-  { g:"Landing", items:[
+const SVC_MAP = { "Landing":"landing", "Dashboard":"dashboard", "Créa":"crea", "Admin":null };
+
+const ALL_GROUPS = [
+  { g:"Landing", svc:"landing", items:[
     { id:"pages", label:"Mes pages", src:"/landing#pages", icon:"home" },
     { id:"domaines", label:"Domaines", src:"/landing#domains", icon:"link" },
   ]},
-  { g:"Dashboard", items:[
+  { g:"Dashboard", svc:"dashboard", items:[
     { id:"acq",     label:"Acquisition", src:"/dashboard",             icon:"chart" },
     { id:"flotte",  label:"Flotte",      src:"/dashboard/flotte",      icon:"phone" },
     { id:"emails",  label:"Emails",      src:"/dashboard/emails",      icon:"mail" },
@@ -128,13 +139,22 @@ const GROUPS = [
     { id:"ads",     label:"Ads",         src:"/dashboard/ads",         icon:"mega" },
     { id:"proxy",   label:"Proxy",       src:"/dashboard/proxy",       icon:"shield" },
     { id:"mailsva", label:"Mails VA",    src:"/dashboard/mails-va",    icon:"inbox" },
-    { id:"membres", label:"Membres",     src:"/dashboard/members",     icon:"users" },
+    { id:"membres-dash", label:"Membres", src:"/dashboard/members",    icon:"users" },
   ]},
-  { g:"Créa", items:[
+  { g:"Créa", svc:"crea", items:[
     { id:"phantom", label:"Phantom", src:"/crea#phantom", icon:"ghost" },
     { id:"music", label:"Musique", src:"/crea#music", icon:"music" },
   ]},
+  { g:"Admin", svc:null, admin:true, items:[
+    { id:"membres", label:"Membres global", src:"/members", icon:"users" },
+  ]},
 ];
+
+// Filter groups by user permissions
+const GROUPS = ALL_GROUPS.filter(g => {
+  if(g.admin) return IS_ADMIN;
+  return !g.svc || USER_SERVICES.includes(g.svc);
+});
 const ALL = GROUPS.flatMap(g => g.items.map(it => ({...it, group:g.g})));
 const byId = Object.fromEntries(ALL.map(it => [it.id, it]));
 
@@ -208,9 +228,11 @@ function setMin(on){ document.body.classList.toggle("sb-min", on); try{ localSto
 sbToggle.addEventListener("click", () => setMin(!document.body.classList.contains("sb-min")));
 try{ if(localStorage.getItem("sbMin")==="1") document.body.classList.add("sb-min"); }catch(e){}
 
+document.getElementById("userEmail").textContent = USER_EMAIL;
+
 let start = (location.hash||"").replace("#","");
 if(!byId[start]){ try{ start = localStorage.getItem("hubPage"); }catch(e){} }
-if(!byId[start]) start = "pages";
+if(!byId[start]) start = ALL[0] ? ALL[0].id : "pages";
 load(start, false);
 </script>
 </body>

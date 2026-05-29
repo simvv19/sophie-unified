@@ -3,3 +3,4 @@ gunicorn
 replicate
 requests
 pillow
+PyJWT

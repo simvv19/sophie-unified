@@ -3,145 +3,151 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sophie · Connexion</title>
+<title>ConquerorZ · Connexion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --bg: #FAFAF9;
-    --bg-elevated: #FFFFFF;
-    --bg-muted: #F4F3F1;
-    --border: #E8E6E1;
-    --border-strong: #D4D1CB;
-    --fg: #0A0A0A;
-    --fg-muted: #5C5A55;
-    --fg-subtle: #8A8780;
-    --accent: #FF3B30;
-    --accent-hover: #E62E24;
-    --ring: rgba(255, 59, 48, 0.35);
-    --radius: 8px;
-    --radius-lg: 16px;
-    --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04);
-    --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.10);
-    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --bg:#FAFAF9; --card:#FFFFFF; --border:#E8E6E1; --border-strong:#D4D1CB;
+    --ink:#16150F; --muted:#615F58; --subtle:#94908A; --muted-bg:#F4F3F1;
+    --accent:#3B9DF7; --accent-deep:#1F7BD6; --accent-soft:#E4F1FE;
+    --red:#E5484D; --red-bg:#FFF0F0;
+    --radius:10px; --radius-lg:16px;
+    --shadow:0 12px 40px rgba(0,0,0,0.08);
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
   body {
-    min-height: 100vh;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
-    font-feature-settings: "ss01", "cv11";
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    min-height:100vh; background:var(--bg);
+    font-family:'Schibsted Grotesk',system-ui,-apple-system,sans-serif;
+    color:var(--ink); display:grid; place-items:center; padding:24px;
+    -webkit-font-smoothing:antialiased;
   }
-  /* subtle warm halo, very faint — no gradient mesh */
   body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(620px 420px at 50% -8%, rgba(255, 59, 48, 0.05), transparent 60%);
-    pointer-events: none;
+    content:""; position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(600px 400px at 50% -6%, rgba(59,157,247,0.06), transparent 60%);
   }
   .card {
-    position: relative;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 40px 36px 36px;
-    width: 100%;
-    max-width: 392px;
-    box-shadow: var(--shadow-lg);
+    position:relative; background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:40px 36px 36px;
+    width:100%; max-width:400px; box-shadow:var(--shadow);
   }
   .logo {
-    width: 40px; height: 40px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 11px;
-    display: grid; place-items: center;
-    font-weight: 700; font-size: 18px;
-    letter-spacing: -0.02em;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 14px -4px rgba(255, 59, 48, 0.5);
+    width:40px; height:40px; background:var(--accent-soft); border-radius:11px;
+    display:grid; place-items:center; margin-bottom:24px;
+    box-shadow:0 4px 14px -4px rgba(59,157,247,0.4);
   }
-  h1 {
-    margin: 0 0 6px;
-    font-size: 24px; font-weight: 600;
-    letter-spacing: -0.025em;
-    color: var(--fg);
+  h1 { font-size:24px; font-weight:700; letter-spacing:-0.03em; margin-bottom:4px; }
+  h1 span { color:var(--accent); }
+  .sub { color:var(--subtle); font-size:13px; margin-bottom:28px; }
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; letter-spacing:0.02em; }
+  .field input {
+    width:100%; padding:11px 14px; border:1px solid var(--border-strong);
+    border-radius:var(--radius); background:var(--bg); color:var(--ink);
+    font-family:inherit; font-size:14px; outline:none;
+    transition:border-color .15s, box-shadow .15s;
   }
-  .sub {
-    color: var(--fg-subtle);
-    font-size: 13.5px;
-    font-family: "Geist Mono", ui-monospace, monospace;
-    letter-spacing: -0.01em;
-    margin: 0 0 30px;
+  .field input::placeholder { color:var(--subtle); }
+  .field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,157,247,0.2); }
+  .btn {
+    width:100%; padding:12px; border:none; border-radius:var(--radius);
+    font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
+    transition:background .15s, opacity .15s; letter-spacing:-0.01em;
   }
-  label {
-    display: block;
-    font-size: 12px;
-    color: var(--fg-muted);
-    font-weight: 500;
-    margin-bottom: 8px;
+  .btn-primary { background:var(--accent); color:#fff; margin-top:4px; }
+  .btn-primary:hover { background:var(--accent-deep); }
+  .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
+  .error {
+    display:none; margin-top:16px; padding:10px 14px; border-radius:8px;
+    background:var(--red-bg); color:var(--red); font-size:13px; font-weight:500;
+    text-align:center;
   }
-  input {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--fg);
-    font-family: inherit;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 120ms var(--ease), box-shadow 120ms var(--ease);
-  }
-  input::placeholder { color: var(--fg-subtle); letter-spacing: 0.15em; }
-  input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--ring);
-  }
-  button {
-    width: 100%;
-    margin-top: 22px;
-    padding: 12px;
-    background: var(--accent);
-    color: #fff;
-    border: 0;
-    border-radius: var(--radius);
-    font-family: inherit;
-    font-size: 15px; font-weight: 600;
-    letter-spacing: -0.01em;
-    cursor: pointer;
-    transition: background 120ms var(--ease);
-  }
-  button:hover { background: var(--accent-hover); }
-  button:active { opacity: 0.85; }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .err {
-    color: var(--accent);
-    font-size: 12.5px;
-    margin-top: 14px;
-    text-align: center;
-  }
+  .error.on { display:block; }
+  .loading { position:relative; pointer-events:none; opacity:0.6; }
 </style>
 </head>
 <body>
-<form class="card" method="post">
-  <input type="hidden" name="next" value="{{ request.args.get('next', '/dashboard') }}">
-  <div class="logo">S</div>
-  <h1>Sophie</h1>
-  <p class="sub">Landing · Dashboard · Crea</p>
-  <label for="pw">mot de passe</label>
-  <input id="pw" type="password" name="password" autofocus required placeholder="••••••••">
-  <button type="submit">Entrer</button>
-  {% if error %}<div class="err">{{ error }}</div>{% endif %}
-</form>
+<div class="card" id="card">
+  <div class="logo">
+    <svg viewBox="-7 -7 88 86" width="22" height="22"><path d="M34.376 9.28651C17.326 14.3365 2.57505 18.7825 1.59705 19.1655C-0.0049535 19.7925 -0.153954 21.1865 0.0970465 33.1325C0.360046 45.6525 0.492046 46.4195 2.43105 46.6965C4.18305 46.9475 32.653 27.7735 58.274 9.08751C60.968 7.12251 62.993 6.04851 62.774 6.69951C62.555 7.35151 49.526 21.0505 33.82 37.1435C18.114 53.2355 4.91205 66.9845 4.48405 67.6965C4.05505 68.4075 4.24805 69.6455 4.91205 70.4465C5.83305 71.5565 8.67905 71.9025 16.874 71.9025H27.627L41.453 50.6525C66.245 12.5475 68.093 9.78651 68.519 10.2115C68.75 10.4435 64.187 23.4055 58.378 39.0175C52.569 54.6295 47.943 68.3025 48.096 69.4025C48.355 71.2495 49.247 71.4245 59.733 71.6865C67.25 71.8745 71.561 71.5795 72.483 70.8135C73.622 69.8685 73.876 63.6635 73.876 36.7805C73.876 5.23551 73.795 3.82151 71.876 1.90251C70.776 0.802513 68.863 -0.0524882 67.626 0.00251179C66.389 0.0585118 51.426 4.23551 34.376 9.28651Z" fill="#1F7BD6"/></svg>
+  </div>
+  <h1>Conqueror<span>Z</span></h1>
+  <p class="sub">Landing &middot; Dashboard &middot; Cr&eacute;a</p>
+
+  <div class="field">
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="vous@email.com" autocomplete="email" />
+  </div>
+  <div class="field">
+    <label for="password">Mot de passe</label>
+    <input type="password" id="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password" />
+  </div>
+  <button class="btn btn-primary" id="loginBtn">Se connecter</button>
+
+  <div class="error" id="error"></div>
+</div>
+
+<script>
+const SB_URL = '{{ supabase_url }}';
+const SB_KEY = '{{ supabase_key }}';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+const nextUrl = new URLSearchParams(location.search).get('next') || '/';
+
+function setTokenAndRedirect(session) {
+  const maxAge = 60 * 60 * 24 * 7; // 7 days
+  document.cookie = 'sb-access-token=' + session.access_token + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+  document.cookie = 'sb-refresh-token=' + session.refresh_token + '; path=/; max-age=' + (maxAge * 4) + '; SameSite=Lax';
+  location.href = nextUrl;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.textContent = msg;
+  el.classList.add('on');
+}
+
+// Check if returning from OAuth or already has session
+(async () => {
+  // Supabase JS auto-detects hash tokens from OAuth redirect
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    setTokenAndRedirect(session);
+  }
+})();
+
+// Email/password login
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) { showError('Email et mot de passe requis'); return; }
+
+  const card = document.getElementById('card');
+  card.classList.add('loading');
+  document.getElementById('error').classList.remove('on');
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  card.classList.remove('loading');
+
+  if (error) {
+    showError(error.message === 'Invalid login credentials'
+      ? 'Email ou mot de passe incorrect'
+      : error.message);
+    return;
+  }
+  setTokenAndRedirect(data.session);
+});
+
+// Enter key on password field
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginBtn').click();
+});
+document.getElementById('email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('password').focus();
+});
+
+</script>
 </body>
 </html>

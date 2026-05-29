@@ -16,8 +16,9 @@ from functools import wraps
 from pathlib import Path
 
 import requests
+import jwt as pyjwt
 from flask import (Flask, jsonify, render_template, request, send_file,
-                   redirect, session, url_for)
+                   redirect, session, url_for, make_response)
 
 ROOT = Path(__file__).parent
 
@@ -41,6 +42,9 @@ app.secret_key = os.environ.get("CREA_SECRET", secrets.token_hex(32))
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://wmnirrzmmvleszmhodvr.supabase.co")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "sb_publishable_ZNP8wIwIcrCCbp-HM6JUDQ_53OR8roa")
+SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+ADMIN_EMAIL = "simcharbo6@gmail.com"
 
 
 @app.after_request
@@ -75,33 +79,248 @@ MUSIC_LIB.mkdir(exist_ok=True)
 
 
 # =============================================================================
-# Auth (global password gate)
+# Auth (Supabase JWT)
 # =============================================================================
 
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "sophie")
+def get_current_user():
+    """Validate Supabase access token via API. Cached in session for 5 min."""
+    token = request.cookies.get("sb-access-token")
+    if not token:
+        return None
+
+    # Check session cache (avoid API call on every request)
+    cached = session.get("_auth_cache")
+    if cached and cached.get("token") == token and (time.time() - cached.get("ts", 0)) < 300:
+        return {"id": cached["id"], "email": cached["email"]}
+
+    # Validate with Supabase Auth API
+    try:
+        r = requests.get(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {token}",
+            },
+            timeout=5,
+        )
+        if r.status_code == 200:
+            data = r.json()
+            user = {"id": data.get("id"), "email": (data.get("email") or "").lower()}
+            session["_auth_cache"] = {"token": token, "ts": time.time(), **user}
+            return user
+        return None
+    except Exception:
+        return None
+
+
+def _load_permissions(email):
+    """Fetch services + role from members table (cached in session for 5 min)."""
+    if email == ADMIN_EMAIL:
+        return {"services": ["landing", "dashboard", "crea"], "is_admin": True, "name": "Admin"}
+    cached = session.get("_perms")
+    if cached and cached.get("email") == email and (time.time() - cached.get("ts", 0)) < 300:
+        return cached
+    try:
+        headers = {"apikey": SUPABASE_ANON_KEY}
+        key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+        headers["Authorization"] = f"Bearer {key}"
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/members",
+            params={"email": f"eq.{email}", "select": "services,role,name"},
+            headers=headers, timeout=5,
+        )
+        if r.status_code == 200 and r.json():
+            m = r.json()[0]
+            perms = {
+                "services": m.get("services") or [],
+                "is_admin": m.get("role") == "admin",
+                "name": m.get("name", ""),
+                "email": email,
+                "ts": time.time(),
+            }
+            session["_perms"] = perms
+            return perms
+    except Exception:
+        pass
+    return {"services": [], "is_admin": False, "name": "", "email": email, "ts": time.time()}
+
 
 def require_auth(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        # Auth disabled — all routes are public
+        user = get_current_user()
+        if not user:
+            if request.path.startswith("/api/"):
+                return jsonify(error="unauthorized"), 401
+            return redirect(f"/login?next={request.path}")
+        perms = _load_permissions(user["email"])
+        user.update(perms)
+        request.user = user
         return f(*args, **kwargs)
     return wrapper
 
-@app.route("/login", methods=["GET", "POST"])
+
+def require_service(service):
+    """Use AFTER @require_auth to gate a route to a specific service."""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            user = getattr(request, "user", None)
+            if not user:
+                return redirect(f"/login?next={request.path}")
+            if user.get("is_admin") or service in user.get("services", []):
+                return f(*args, **kwargs)
+            if request.path.startswith("/api/"):
+                return jsonify(error="forbidden"), 403
+            return "<h2 style='font-family:sans-serif;padding:40px;color:#666'>Accès non autorisé à ce service</h2>", 403
+        return wrapper
+    return decorator
+
+
+@app.route("/login")
 def login():
-    if session.get("authed"):
+    token = request.cookies.get("sb-access-token")
+    if token and get_current_user():
         return redirect(request.args.get("next", "/"))
-    if request.method == "POST":
-        if request.form.get("password") == APP_PASSWORD:
-            session["authed"] = True
-            return redirect(request.form.get("next", "/dashboard"))
-        return render_template("login.html", error="Mot de passe incorrect")
-    return render_template("login.html")
+    return render_template("login.html",
+                           supabase_url=SUPABASE_URL,
+                           supabase_key=SUPABASE_ANON_KEY)
 
 @app.route("/logout")
 def logout():
-    session.pop("authed", None)
-    return redirect("/login")
+    session.clear()
+    resp = make_response(redirect("/login"))
+    resp.delete_cookie("sb-access-token")
+    resp.delete_cookie("sb-refresh-token")
+    return resp
+
+
+# =============================================================================
+# Members management (admin only)
+# =============================================================================
+
+@app.route("/members")
+@require_auth
+def members_global():
+    if not request.user.get("is_admin"):
+        return "<h2 style='font-family:sans-serif;padding:40px;color:#666'>Réservé aux administrateurs</h2>", 403
+    return render_template("members_global.html",
+                           supabase_url=SUPABASE_URL,
+                           supabase_key=SUPABASE_ANON_KEY)
+
+@app.route("/api/members", methods=["GET"])
+@require_auth
+def api_members_list():
+    if not request.user.get("is_admin"):
+        return jsonify(error="admin only"), 403
+    headers = {"apikey": SUPABASE_ANON_KEY}
+    key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+    headers["Authorization"] = f"Bearer {key}"
+    r = requests.get(
+        f"{SUPABASE_URL}/rest/v1/members",
+        params={"select": "*", "order": "created_at"},
+        headers=headers, timeout=10,
+    )
+    return jsonify(members=r.json() if r.status_code == 200 else [])
+
+@app.route("/api/members", methods=["POST"])
+@require_auth
+def api_members_create():
+    if not request.user.get("is_admin"):
+        return jsonify(error="admin only"), 403
+    data = request.json or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    services = data.get("services", [])
+    role = data.get("role", "member")
+    if not name or not email:
+        return jsonify(error="Nom et email requis"), 400
+
+    headers = {"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json",
+               "Prefer": "return=representation"}
+    key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+    headers["Authorization"] = f"Bearer {key}"
+
+    password = (data.get("password") or "").strip()
+    if not password or len(password) < 6:
+        return jsonify(error="Mot de passe requis (6 caractères min)"), 400
+
+    # Create auth user via Supabase Admin API
+    auth_ok = False
+    auth_err = None
+    if SUPABASE_SERVICE_KEY:
+        try:
+            auth_r = requests.post(
+                f"{SUPABASE_URL}/auth/v1/admin/users",
+                json={"email": email, "password": password, "email_confirm": True},
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                    "Content-Type": "application/json",
+                },
+                timeout=10,
+            )
+            if auth_r.status_code < 300:
+                auth_ok = True
+            else:
+                auth_err = auth_r.json().get("msg") or auth_r.json().get("message") or str(auth_r.status_code)
+        except Exception as e:
+            auth_err = str(e)
+    else:
+        return jsonify(error="SUPABASE_SERVICE_KEY manquant — ajoute-le dans .env"), 400
+
+    if not auth_ok:
+        return jsonify(error=f"Erreur création compte: {auth_err}"), 400
+
+    # Insert member in table
+    r = requests.post(
+        f"{SUPABASE_URL}/rest/v1/members",
+        json={"name": name, "email": email, "services": services, "role": role},
+        headers=headers, timeout=10,
+    )
+    member = r.json()[0] if r.status_code in (200, 201) and r.json() else None
+
+    return jsonify(ok=True, member=member)
+
+@app.route("/api/members/<member_id>", methods=["PATCH"])
+@require_auth
+def api_members_update(member_id):
+    if not request.user.get("is_admin"):
+        return jsonify(error="admin only"), 403
+    data = request.json or {}
+    update = {}
+    if "name" in data: update["name"] = data["name"].strip()
+    if "email" in data: update["email"] = data["email"].strip().lower()
+    if "services" in data: update["services"] = data["services"]
+    if "role" in data: update["role"] = data["role"]
+    if not update:
+        return jsonify(error="nothing to update"), 400
+
+    headers = {"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json",
+               "Prefer": "return=representation"}
+    key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+    headers["Authorization"] = f"Bearer {key}"
+    r = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/members",
+        params={"id": f"eq.{member_id}"},
+        json=update, headers=headers, timeout=10,
+    )
+    return jsonify(ok=True, member=r.json()[0] if r.status_code == 200 and r.json() else None)
+
+@app.route("/api/members/<member_id>", methods=["DELETE"])
+@require_auth
+def api_members_delete(member_id):
+    if not request.user.get("is_admin"):
+        return jsonify(error="admin only"), 403
+    headers = {"apikey": SUPABASE_ANON_KEY}
+    key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+    headers["Authorization"] = f"Bearer {key}"
+    requests.delete(
+        f"{SUPABASE_URL}/rest/v1/members",
+        params={"id": f"eq.{member_id}"},
+        headers=headers, timeout=10,
+    )
+    return jsonify(ok=True)
 
 
 # =============================================================================
@@ -111,10 +330,15 @@ def logout():
 @app.route("/")
 @require_auth
 def centrale():
-    return render_template("centrale.html")
+    user = request.user
+    return render_template("centrale.html",
+                           user_services=json.dumps(user.get("services", [])),
+                           user_email=user.get("email", ""),
+                           is_admin=user.get("is_admin", False))
 
 @app.route("/landing")
 @require_auth
+@require_service("landing")
 def landing():
     return render_template("landing.html")
 
@@ -138,6 +362,7 @@ DASHBOARD_PAGES = {
 @app.route("/dashboard")
 @app.route("/dashboard/")
 @require_auth
+@require_service("dashboard")
 def dashboard_index():
     return render_template("dashboard/index.html",
                            supabase_url=SUPABASE_URL,
@@ -145,6 +370,7 @@ def dashboard_index():
 
 @app.route("/dashboard/<page>")
 @require_auth
+@require_service("dashboard")
 def dashboard_page(page):
     template = DASHBOARD_PAGES.get(page)
     if not template:
@@ -160,6 +386,7 @@ def dashboard_page(page):
 
 @app.route("/crea")
 @require_auth
+@require_service("crea")
 def crea():
     return render_template("crea.html")
 

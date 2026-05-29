@@ -1888,9 +1888,11 @@ let openPageId = null;
 let saveTimer = null;
 let openFolders = new Set();
 
+// Fake session object — auth is handled by Flask
+const session = { user: { id: "admin", email: "admin@conquerorz.co" }, access_token: "flask-protected" };
+
 async function showAdmin() {
   // Auth bypassed - protected by Flask login
-  currentUser = { id: "admin", email: "admin@conquerorz.co" };
   currentUser = session.user;
   if ((location.hash||"").indexOf("domains") > -1) currentSection = "domains";
   await Promise.all([loadFolders(), loadPages(), loadDomains()]);
