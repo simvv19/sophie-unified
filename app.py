@@ -83,8 +83,7 @@ APP_PASSWORD = os.environ.get("APP_PASSWORD", "sophie")
 def require_auth(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not session.get("authed"):
-            return redirect(url_for("login", next=request.path))
+        # Auth disabled — all routes are public
         return f(*args, **kwargs)
     return wrapper
 

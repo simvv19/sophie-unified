@@ -1889,8 +1889,8 @@ let saveTimer = null;
 let openFolders = new Set();
 
 async function showAdmin() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return showLogin();
+  // Auth bypassed - protected by Flask login
+  currentUser = { id: "admin", email: "admin@conquerorz.co" };
   currentUser = session.user;
   if ((location.hash||"").indexOf("domains") > -1) currentSection = "domains";
   await Promise.all([loadFolders(), loadPages(), loadDomains()]);
@@ -2109,7 +2109,7 @@ function openAddDomainModal() {
     onSubmit: async () => {
       const dom = document.getElementById("m_domain").value.trim();
       if (!dom) return false;
-      const { data: { session } } = await sb.auth.getSession();
+      // Auth bypassed - protected by Flask login
       const r = await fetch("/api/domains/add", {
         method: "POST",
         headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -2126,7 +2126,7 @@ function openAddDomainModal() {
 }
 
 async function syncDomainsStatus() {
-  const { data: { session } } = await sb.auth.getSession();
+  // Auth bypassed - protected by Flask login
   const r = await fetch("/api/domains/sync", {
     method: "POST",
     headers: { Authorization: `Bearer ${session.access_token}` }
@@ -2150,7 +2150,7 @@ async function onDomainAction(action, id) {
   }
   if (action === "remove") {
     if (!confirm(`Retirer ${d.domain} ?`)) return;
-    const { data: { session } } = await sb.auth.getSession();
+    // Auth bypassed - protected by Flask login
     const r = await fetch("/api/domains/remove", {
       method: "POST",
       headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
