@@ -48,6 +48,13 @@
   .badge-banned { background:var(--red-bg); color:var(--red); }
   .badge-warming { background:var(--orange-bg); color:var(--orange); }
   .warmup-tag { display:inline-flex; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; background:var(--accent-soft); color:var(--accent-deep); }
+  .warmup-bar { display:flex; align-items:center; gap:8px; min-width:120px; }
+  .warmup-bar .track { flex:1; height:6px; background:var(--muted-bg); border-radius:3px; overflow:hidden; }
+  .warmup-bar .fill { height:100%; border-radius:3px; transition:width .3s; }
+  .warmup-bar .fill.warming { background:var(--accent); }
+  .warmup-bar .fill.done { background:var(--green); }
+  .warmup-bar .fill.banned { background:var(--red); }
+  .warmup-bar .lbl { font-size:11px; font-weight:600; color:var(--muted); white-space:nowrap; }
   .row-actions { display:flex; gap:4px; justify-content:flex-end; }
   .row-actions button { background:none; border:0; cursor:pointer; padding:5px 8px; border-radius:6px; color:var(--subtle); font-size:11px; font-weight:600; font-family:inherit; }
   .row-actions button:hover { background:var(--muted-bg); color:var(--ink); }
@@ -91,7 +98,7 @@
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Username</th><th>Email</th><th>Plateforme</th><th>Warm-up</th><th>Statut</th><th>Cr&eacute;&eacute; le</th><th></th></tr></thead>
+      <thead><tr><th>Username</th><th>Email</th><th>Plateforme</th><th>Warm-up</th><th>Statut</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     <div class="empty" id="empty" style="display:none;">Aucun compte VA pour l'instant</div>
@@ -110,6 +117,16 @@
       </div>
       <div class="form-row">
         <div class="field"><label>Mot de passe</label><input id="mPass" type="text" placeholder="mot de passe" autocomplete="off" /></div>
+        <div class="field"><label>&nbsp;</label><div></div></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Statut</label>
+          <select id="mStatus">
+            <option value="active">Actif</option>
+            <option value="warming">En warm-up</option>
+            <option value="banned">Banni</option>
+          </select>
+        </div>
         <div class="field"><label>Plateforme</label>
           <select id="mPlatform">
             <option value="instagram">Instagram</option>
@@ -122,18 +139,8 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="field"><label>Statut</label>
-          <select id="mStatus">
-            <option value="active">Actif</option>
-            <option value="warming">En warm-up</option>
-            <option value="banned">Banni</option>
-          </select>
-        </div>
-        <div class="field"><label>Jour warm-up</label><input id="mWarmup" type="number" min="0" value="0" placeholder="0" /></div>
-      </div>
-      <div class="form-row">
+        <div class="field"><label>Jour warm-up actuel</label><input id="mWarmup" type="number" min="0" value="0" placeholder="0" /></div>
         <div class="field"><label>Warm-up max (jours)</label><input id="mWarmupMax" type="number" min="1" value="14" placeholder="14" /></div>
-        <div class="field"></div>
       </div>
     </div>
     <div id="modalMsg"></div>
@@ -167,15 +174,16 @@ function render(){
   if(!accounts.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
   tbody.innerHTML=accounts.map(a=>{
-    const date=a.created_at?new Date(a.created_at).toLocaleDateString('fr-FR'):'—';
-    const wu=warmupLabel(a.warmup_day,a.status,a.warmup_max);
+    const day=a.warmup_day||0, max=a.warmup_max||14;
+    const pct=Math.min(100,Math.round((day/max)*100));
+    const cls=a.status==='banned'?'banned':a.status==='active'||day>=max?'done':'warming';
+    const lbl=a.status==='active'?'Terminé':a.status==='banned'?'Banni':`J${day}/${max}`;
     return `<tr>
       <td style="font-weight:600">${a.username||'—'}</td>
       <td style="font-size:12px;color:var(--muted)">${a.email||'—'}</td>
       <td>${a.platform||'—'}</td>
-      <td>${wu!=='—'?`<span class="warmup-tag">${wu}</span>`:'—'}</td>
+      <td><div class="warmup-bar"><div class="track"><div class="fill ${cls}" style="width:${a.status==='active'?100:pct}%"></div></div><span class="lbl">${lbl}</span></div></td>
       <td><span class="badge badge-${a.status}">${a.status}</span></td>
-      <td style="color:var(--subtle);font-size:12px">${date}</td>
       <td><div class="row-actions"><button data-edit="${a.id}">Modifier</button><button class="del" data-del="${a.id}">Suppr</button></div></td>
     </tr>`;
   }).join('');
