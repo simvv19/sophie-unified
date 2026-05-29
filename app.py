@@ -1374,9 +1374,9 @@ def va_accounts_create():
         "password": (d.get("password") or "").strip(),
         "platform": d.get("platform", "instagram"),
         "status": "active",
-        "warmup_day": 0,
+        "warmup_day": d.get("warmup_day", 0),
+        "warmup_max": d.get("warmup_max", 14),
         "warmup_started_at": datetime.utcnow().isoformat(),
-        "pages": d.get("pages", []),
     }
     r = requests.post(f"{SUPABASE_URL}/rest/v1/va_accounts",
                       json=row, headers=_sb_headers(), timeout=10)
@@ -1390,7 +1390,7 @@ def va_accounts_create():
 def va_accounts_update(aid):
     d = request.json or {}
     patch = {}
-    for k in ("username", "email", "password", "platform", "status", "warmup_day", "pages"):
+    for k in ("username", "email", "password", "platform", "status", "warmup_day", "warmup_max", "pages"):
         if k in d:
             patch[k] = d[k]
     patch["updated_at"] = datetime.utcnow().isoformat()

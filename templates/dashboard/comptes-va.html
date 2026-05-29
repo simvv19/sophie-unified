@@ -131,6 +131,10 @@
         </div>
         <div class="field"><label>Jour warm-up</label><input id="mWarmup" type="number" min="0" value="0" placeholder="0" /></div>
       </div>
+      <div class="form-row">
+        <div class="field"><label>Warm-up max (jours)</label><input id="mWarmupMax" type="number" min="1" value="14" placeholder="14" /></div>
+        <div class="field"></div>
+      </div>
     </div>
     <div id="modalMsg"></div>
     <div class="modal-footer">
@@ -149,8 +153,8 @@ async function loadAccounts(){
   accounts = j.accounts || [];
   render();
 }
-function warmupLabel(day, status){
-  if(status==='warming' && day>=0) return 'J'+day;
+function warmupLabel(day, status, max){
+  if(status==='warming' && day>=0) return 'J'+day+'/'+(max||'?');
   if(status==='active') return 'Terminé';
   return '—';
 }
@@ -164,7 +168,7 @@ function render(){
   empty.style.display='none';
   tbody.innerHTML=accounts.map(a=>{
     const date=a.created_at?new Date(a.created_at).toLocaleDateString('fr-FR'):'—';
-    const wu=warmupLabel(a.warmup_day,a.status);
+    const wu=warmupLabel(a.warmup_day,a.status,a.warmup_max);
     return `<tr>
       <td style="font-weight:600">${a.username||'—'}</td>
       <td style="font-size:12px;color:var(--muted)">${a.email||'—'}</td>
@@ -193,6 +197,7 @@ function openModal(id){
   document.getElementById('mPlatform').value=a?.platform||'instagram';
   document.getElementById('mStatus').value=a?.status||'active';
   document.getElementById('mWarmup').value=a?.warmup_day||0;
+  document.getElementById('mWarmupMax').value=a?.warmup_max||14;
   document.getElementById('delBtn').style.display=isNew?'none':'inline-flex';
   document.getElementById('saveBtn').textContent=isNew?'Créer':'Enregistrer';
   document.getElementById('modalMsg').innerHTML='';
@@ -217,8 +222,9 @@ document.getElementById('saveBtn').onclick=async()=>{
   const platform=document.getElementById('mPlatform').value;
   const status=document.getElementById('mStatus').value;
   const warmup_day=parseInt(document.getElementById('mWarmup').value)||0;
+  const warmup_max=parseInt(document.getElementById('mWarmupMax').value)||14;
   if(!username){showMsg('Username requis','err');return;}
-  const body={username,email,password,platform,status,warmup_day};
+  const body={username,email,password,platform,status,warmup_day,warmup_max};
   if(id){
     const r=await fetch('/api/va-accounts/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();
