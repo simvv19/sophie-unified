@@ -112,7 +112,12 @@ function showError(msg) {
 
 // Check if returning from OAuth or already has session
 (async () => {
-  // Supabase JS auto-detects hash tokens from OAuth redirect
+  // If we just logged out, sign out from Supabase JS too
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('next') === '/' || document.referrer.includes('/logout')) {
+    await sb.auth.signOut();
+    return;
+  }
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     setTokenAndRedirect(session);
