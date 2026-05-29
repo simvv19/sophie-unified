@@ -1248,6 +1248,94 @@ def api_clear():
     return jsonify(ok=True)
 
 
+# =============================================================================
+# Proxy rotation API
+# =============================================================================
+
+@app.route("/api/proxy/rotate", methods=["POST"])
+@require_auth
+def proxy_rotate():
+    """Rotate proxy IP and return the new IP."""
+    try:
+        # Fetch proxy info from Supabase
+        headers = {"apikey": SUPABASE_ANON_KEY}
+        key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+        headers["Authorization"] = f"Bearer {key}"
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/proxies",
+            params={"select": "*", "order": "position", "limit": "1"},
+            headers=headers, timeout=5,
+        )
+        if r.status_code != 200 or not r.json():
+            return jsonify(error="Proxy non trouvé"), 404
+        proxy = r.json()[0]
+
+        change_url = proxy.get("change_url")
+        if not change_url:
+            return jsonify(error="Pas d'URL de rotation"), 400
+
+        # Call rotation URL
+        rot = requests.get(change_url, timeout=10)
+        import time as _t; _t.sleep(2)  # Wait for IP to change
+
+        # Get new IP through the proxy
+        new_ip = None
+        host = proxy.get("proxy_host")
+        port = proxy.get("proxy_port")
+        user = proxy.get("proxy_user")
+        pwd = proxy.get("proxy_pass")
+        if host and port:
+            try:
+                proxies = {"https": f"socks5://{user}:{pwd}@{host}:{port}",
+                           "http": f"socks5://{user}:{pwd}@{host}:{port}"}
+                ip_r = requests.get("https://api.ipify.org", proxies=proxies, timeout=10)
+                new_ip = ip_r.text.strip()
+            except Exception:
+                pass
+
+        # Update last_rotated_at and last_ip in Supabase
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/proxies",
+            params={"id": f"eq.{proxy['id']}"},
+            json={"last_rotated_at": "now()", "last_ip": new_ip},
+            headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"},
+            timeout=5,
+        )
+
+        return jsonify(ok=True, ip=new_ip)
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+@app.route("/api/proxy/ip")
+@require_auth
+def proxy_ip():
+    """Get current proxy IP."""
+    try:
+        headers = {"apikey": SUPABASE_ANON_KEY}
+        key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+        headers["Authorization"] = f"Bearer {key}"
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/proxies",
+            params={"select": "*", "order": "position", "limit": "1"},
+            headers=headers, timeout=5,
+        )
+        if r.status_code != 200 or not r.json():
+            return jsonify(error="Proxy non trouvé"), 404
+        proxy = r.json()[0]
+        host = proxy.get("proxy_host")
+        port = proxy.get("proxy_port")
+        user = proxy.get("proxy_user")
+        pwd = proxy.get("proxy_pass")
+        if not host:
+            return jsonify(ip=None)
+        proxies = {"https": f"socks5://{user}:{pwd}@{host}:{port}",
+                   "http": f"socks5://{user}:{pwd}@{host}:{port}"}
+        ip_r = requests.get("https://api.ipify.org", proxies=proxies, timeout=10)
+        return jsonify(ip=ip_r.text.strip())
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+
 if __name__ == "__main__":
     print("Sophie Unified → http://localhost:5050")
     print("  /           → Landing page")

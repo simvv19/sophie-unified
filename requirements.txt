@@ -4,3 +4,4 @@ replicate
 requests
 pillow
 PyJWT
+pysocks

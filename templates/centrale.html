@@ -139,7 +139,6 @@ const ALL_GROUPS = [
     { id:"ads",     label:"Ads",         src:"/dashboard/ads",         icon:"mega" },
     { id:"proxy",   label:"Proxy",       src:"/dashboard/proxy",       icon:"shield" },
     { id:"mailsva", label:"Mails VA",    src:"/dashboard/mails-va",    icon:"inbox" },
-    { id:"membres-dash", label:"Membres", src:"/dashboard/members",    icon:"users" },
   ]},
   { g:"Créa", svc:"crea", items:[
     { id:"phantom", label:"Phantom", src:"/crea#phantom", icon:"ghost" },
@@ -183,7 +182,12 @@ function hideInnerChrome(){
     if(!doc) return;
     let st = doc.getElementById("__hub_hide");
     if(!st){ st = doc.createElement("style"); st.id = "__hub_hide"; (doc.head||doc.documentElement).appendChild(st); }
-    st.textContent = "#sophie-supernav{display:none!important;} body{padding-top:0!important;} .app{padding-top:0!important;}";
+    st.textContent = `
+      #sophie-supernav{display:none!important;} body{padding-top:0!important;} .app{padding-top:0!important;}
+      .admin-app{grid-template-columns:1fr!important;}
+      .admin-app>.sidebar{display:none!important;}
+      .sb-foot{display:none!important;}
+    `;
   }catch(e){}
 }
 

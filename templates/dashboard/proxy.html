@@ -152,6 +152,8 @@
     <div class="proxy-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg>
     </div>
+    <div class="current-ip" id="currentIp" style="font-family:'Geist Mono',monospace;font-size:22px;font-weight:600;margin:12px 0 4px;color:var(--text);letter-spacing:-0.02em;">—</div>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:18px;">IP actuelle</div>
     <button class="rotate-btn" id="rotateBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>
       Changer l'IP
@@ -175,32 +177,35 @@ let proxy = null;
 function fmtTime(iso){ if(!iso) return ''; return new Date(iso).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
 
 async function load() {
-  const { data } = await sb.from('proxies').select('id,name,last_rotated_at').order('position').limit(1);
+  const { data } = await sb.from('proxies').select('id,name,last_rotated_at,last_ip').order('position').limit(1);
   proxy = data && data[0];
   if (proxy) {
     document.getElementById('proxyName').textContent = proxy.name;
+    if (proxy.last_ip) document.getElementById('currentIp').textContent = proxy.last_ip;
     if (proxy.last_rotated_at) document.getElementById('lastRotate').textContent = 'Dernier changement: ' + fmtTime(proxy.last_rotated_at);
   }
+  // Fetch live IP
+  try {
+    const r = await fetch('/api/proxy/ip');
+    const j = await r.json();
+    if (j.ip) document.getElementById('currentIp').textContent = j.ip;
+  } catch(e) {}
 }
 
 document.getElementById('rotateBtn').onclick = async () => {
-  if (!proxy) return;
   const btn = document.getElementById('rotateBtn');
   const res = document.getElementById('result');
   btn.disabled = true; btn.classList.add('spinning');
   res.innerHTML = '<div class="badge" style="background:var(--accent-soft);color:var(--text-2)">Changement en cours…</div>';
   try {
-    const r = await fetch(window.__SB_URL + '/functions/v1/rotate-proxy', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'apikey':window.__SB_KEY, 'Authorization':'Bearer '+window.__SB_KEY },
-      body: JSON.stringify({ proxyId: proxy.id })
-    });
+    const r = await fetch('/api/proxy/rotate', { method:'POST' });
     const j = await r.json();
     if (j.ok) {
-      res.innerHTML = '<div class="badge ok"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3 3 7-7"/></svg>IP changée avec succès</div>';
+      document.getElementById('currentIp').textContent = j.ip || '—';
+      res.innerHTML = '<div class="badge ok"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3 3 7-7"/></svg>IP changée : ' + (j.ip || '') + '</div>';
       document.getElementById('lastRotate').textContent = 'Dernier changement: à l\'instant';
     } else {
-      res.innerHTML = '<div class="badge err">Échec: ' + (j.error || (j.response && JSON.stringify(j.response)) || 'inconnu') + '</div>';
+      res.innerHTML = '<div class="badge err">Échec: ' + (j.error || 'inconnu') + '</div>';
     }
   } catch(e) {
     res.innerHTML = '<div class="badge err">Erreur réseau</div>';

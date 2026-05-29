@@ -70,16 +70,18 @@
   /* Modal */
   .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.45); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:200; }
   .modal-bg.show { display:flex; }
-  .modal { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:28px; width:100%; max-width:460px; box-shadow:var(--shadow-lg); }
+  .modal { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:28px; width:100%; max-width:460px; box-shadow:var(--shadow-lg); max-height:90vh; overflow-y:auto; }
   .modal h3 { margin:0 0 4px; font-size:18px; font-weight:700; letter-spacing:-0.01em; }
   .modal-sub { color:var(--subtle); font-size:12px; margin-bottom:20px; }
-  .form-grid { display:grid; gap:14px; }
-  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-grid { display:grid; gap:14px; overflow:hidden; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0; }
+  .form-grid, .form-row, .field, .svc-grid { min-width:0; }
+  .field input, .field select { width:100%; min-width:0; box-sizing:border-box; }
   .field { display:flex; flex-direction:column; gap:5px; }
   .field label { font-size:11px; font-weight:700; color:var(--subtle); text-transform:uppercase; letter-spacing:0.04em; }
   .field input, .field select {
     font-family:inherit; font-size:13px; padding:9px 12px;
-    border-radius:8px; border:1px solid var(--border); background:var(--card);
+    border-radius:8px; border:1px solid var(--border-strong); background:var(--bg);
     color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s;
   }
   .field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,157,247,0.15); }
@@ -87,10 +89,11 @@
   .svc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .svc-check {
     display:flex; align-items:center; gap:8px; padding:10px 12px;
-    border:1px solid var(--border); border-radius:8px; cursor:pointer;
+    border:1px solid var(--border-strong); border-radius:8px; cursor:pointer;
     user-select:none; font-size:13px; font-weight:500; transition:all .15s;
   }
   .svc-check:hover { background:var(--muted-bg); }
+  .svc-check input { accent-color:var(--accent); width:16px; height:16px; }
   .svc-check input:checked + span { color:var(--accent-deep); font-weight:600; }
   .svc-check:has(input:checked) { border-color:var(--accent); background:var(--accent-soft); }
 
