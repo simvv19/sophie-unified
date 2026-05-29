@@ -266,7 +266,13 @@ def api_members_create():
             if auth_r.status_code < 300:
                 auth_ok = True
             else:
-                auth_err = auth_r.json().get("msg") or auth_r.json().get("message") or str(auth_r.status_code)
+                err_body = auth_r.json() if auth_r.headers.get("content-type","").startswith("application/json") else {}
+                err_msg = err_body.get("msg") or err_body.get("message") or str(auth_r.status_code)
+                # If user already exists in auth, that's fine — just add to members table
+                if "already" in err_msg.lower() or auth_r.status_code == 422:
+                    auth_ok = True
+                else:
+                    auth_err = err_msg
         except Exception as e:
             auth_err = str(e)
     else:
