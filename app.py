@@ -1373,7 +1373,7 @@ def va_accounts_create():
         "email": (d.get("email") or "").strip(),
         "password": (d.get("password") or "").strip(),
         "platform": d.get("platform", "instagram"),
-        "status": "active",
+        "status": d.get("status", "warming"),
         "warmup_day": d.get("warmup_day", 0),
         "warmup_max": d.get("warmup_max", 14),
         "warmup_started_at": datetime.utcnow().isoformat(),

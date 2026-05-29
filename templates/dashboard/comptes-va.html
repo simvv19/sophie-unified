@@ -122,8 +122,8 @@
       <div class="form-row">
         <div class="field"><label>Statut</label>
           <select id="mStatus">
-            <option value="active">Actif</option>
             <option value="warming">En warm-up</option>
+            <option value="active">Actif</option>
             <option value="banned">Banni</option>
           </select>
         </div>
@@ -203,7 +203,7 @@ function openModal(id){
   document.getElementById('mEmail').value=a?.email||'';
   document.getElementById('mPass').value=a?.password||'';
   document.getElementById('mPlatform').value=a?.platform||'instagram';
-  document.getElementById('mStatus').value=a?.status||'active';
+  document.getElementById('mStatus').value=a?.status||'warming';
   document.getElementById('mWarmup').value=a?.warmup_day||0;
   document.getElementById('mWarmupMax').value=a?.warmup_max||14;
   document.getElementById('delBtn').style.display=isNew?'none':'inline-flex';
