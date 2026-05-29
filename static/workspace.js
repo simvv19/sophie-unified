@@ -161,7 +161,7 @@ function openWsModal(existing) {
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
         <button id="_wsModalCancel" style="font-family:inherit;font-size:12px;font-weight:500;padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;">Annuler</button>
-        <button id="_wsModalSave" style="font-family:inherit;font-size:12px;font-weight:500;padding:7px 14px;border-radius:6px;border:1px solid var(--text);background:var(--text);color:var(--bg);cursor:pointer;">${isEdit?'Enregistrer':'Créer'}</button>
+        <button id="_wsModalSave" style="font-family:inherit;font-size:12px;font-weight:500;padding:7px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;">${isEdit?'Enregistrer':'Créer'}</button>
       </div>
     </div>
   `;

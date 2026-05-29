@@ -6,7 +6,7 @@
 <title>Sophie · Mails VA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 {% endraw %}<script>window.__SB_URL='{{ supabase_url }}';window.__SB_KEY='{{ supabase_key }}';</script>{% raw %}
 <script>
@@ -16,9 +16,10 @@
 
 <style>
   :root {
-    --bg:#fafaf9; --card:#fff; --border:#ebeae5; --border-strong:#d9d7d0;
-    --text:#1a1a19; --text-2:#5c5a55; --text-3:#8e8b84; --text-4:#b8b5ad;
-    --accent-soft:#f4f3ef; --hover:#f6f5f1;
+    --accent:#3B9DF7; --accent-hover:#1F7BD6; --ring:rgba(59,157,247,0.30);
+    --bg:#fafaf9; --card:#fff; --border:#e8e6e1; --border-strong:#d4d1cb;
+    --text:#0a0a0a; --text-2:#5c5a55; --text-3:#8a8780; --text-4:#b8b5ad;
+    --accent-soft:#f4f3f1; --hover:#f1efea;
     --positive:#15803d; --positive-bg:#ecfdf5;
     --negative:#b91c1c; --negative-bg:#fef2f2;
     --info:#1d4ed8; --info-bg:#eff6ff;
@@ -28,6 +29,7 @@
     --shadow:0 1px 3px rgba(20,19,17,0.06);
   }
   html[data-theme="dark"] {
+    --accent:#5BA8F5; --accent-hover:#7CC0FF; --ring:rgba(124,192,255,0.34);
     --bg:#0e0e0c; --card:#181816; --border:#2a2823; --border-strong:#3a3730;
     --text:#f4ede0; --text-2:#b5ad9d; --text-3:#7d7567; --text-4:#50493e;
     --accent-soft:#1f1d18; --hover:#1f1d18;
@@ -87,9 +89,20 @@
   .status-select.rien { background:var(--card); color:var(--text-3); }
   .empty { padding:40px; text-align:center; color:var(--text-4); font-size:13px; }
   @media (max-width:900px){ .layout{padding:20px;} .stats{grid-template-columns:repeat(2,1fr);} }
-</style>
+
+  /* ---- ConquerorZ accent overrides ---- */
+  *:focus-visible:not(input):not(textarea):not(select):not([contenteditable]){outline:2px solid var(--accent);outline-offset:1px;border-radius:5px;}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--ring,rgba(59,157,247,0.30))!important;}
+  ::selection{background:rgba(59,157,247,0.16);}
+  .brand-logo{background:var(--accent)!important;color:#fff!important;}
+  </style>
 {% endraw %}
 
+<style id="brand-override">
+  *, *::before, *::after { font-family:'Schibsted Grotesk', system-ui, -apple-system, sans-serif !important; }
+  /* hide-top-nav */ .topbar{ display:none !important; }
+  nav.tabs a.active{ background:#E4F1FE !important; color:#1F7BD6 !important; }
+</style>
 </head>
 <body>
 <!-- SOPHIE UNIFIED NAV -->
@@ -97,7 +110,7 @@
   <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:40px;">
     <div style="display:flex;align-items:center;gap:6px;">
       <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;padding:4px 10px 4px 6px;border-radius:6px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
-        <span style="width:20px;height:20px;background:#f4ede0;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#0e0e0c;">S</span>
+        <span style="width:20px;height:20px;background:#3B9DF7;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;">S</span>
         <span style="color:#f4ede0;font-size:12px;font-weight:500;letter-spacing:-0.01em;">Sophie</span>
       </a>
       <span style="color:rgba(255,255,255,0.15);font-size:14px;margin:0 2px;">/</span>

@@ -2,56 +2,134 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<title>Sophie · Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sophie · Connexion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #FAFAF9;
+    --bg-elevated: #FFFFFF;
+    --bg-muted: #F4F3F1;
+    --border: #E8E6E1;
+    --border-strong: #D4D1CB;
+    --fg: #0A0A0A;
+    --fg-muted: #5C5A55;
+    --fg-subtle: #8A8780;
+    --accent: #FF3B30;
+    --accent-hover: #E62E24;
+    --ring: rgba(255, 59, 48, 0.35);
+    --radius: 8px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.10);
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
   body {
-    margin:0; min-height: 100vh;
-    background: #F8F8F8;
-    color: #1D1D1E;
-    font-family: "Geist", -apple-system, sans-serif;
-    display: grid; place-items: center;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    display: grid;
+    place-items: center;
+    padding: 24px;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* subtle warm halo, very faint — no gradient mesh */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(620px 420px at 50% -8%, rgba(255, 59, 48, 0.05), transparent 60%);
+    pointer-events: none;
   }
   .card {
-    background: #fff;
-    border: 1px solid #E5E5EA;
-    border-radius: 18px;
-    padding: 36px;
-    width: 380px;
-    box-shadow: rgba(10,11,36,0.02) 0px 11px 11px 0px, rgba(10,11,36,0.02) 0px 3px 6px 0px;
+    position: relative;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px 36px;
+    width: 100%;
+    max-width: 392px;
+    box-shadow: var(--shadow-lg);
   }
   .logo {
-    width: 36px; height: 36px;
-    background: #2D7FF9; color: #fff;
-    border-radius: 10px;
+    width: 40px; height: 40px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 11px;
     display: grid; place-items: center;
-    font-weight: 700; font-size: 15px;
-    margin-bottom: 20px;
+    font-weight: 700; font-size: 18px;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 14px -4px rgba(255, 59, 48, 0.5);
   }
-  h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: -0.54px; font-weight: 700; color: #1D1D1E; }
-  .sub { color: #9B9B9E; font-size: 14px; margin-bottom: 28px; }
-  label { font-size: 12px; color: #6B6B6E; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; display: block; margin-bottom: 6px; }
+  h1 {
+    margin: 0 0 6px;
+    font-size: 24px; font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--fg);
+  }
+  .sub {
+    color: var(--fg-subtle);
+    font-size: 13.5px;
+    font-family: "Geist Mono", ui-monospace, monospace;
+    letter-spacing: -0.01em;
+    margin: 0 0 30px;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--fg-muted);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
   input {
-    width: 100%; padding: 11px 13px;
-    border: 1px solid #E5E5EA; border-radius: 7px;
-    background: #fff; color: #1D1D1E;
-    font-family: inherit; font-size: 14px;
-    outline: none; transition: all .15s;
-    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 120ms var(--ease), box-shadow 120ms var(--ease);
   }
-  input:focus { border-color: #2D7FF9; box-shadow: 0 0 0 3px rgba(45,127,249,0.12); }
+  input::placeholder { color: var(--fg-subtle); letter-spacing: 0.15em; }
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--ring);
+  }
   button {
-    width: 100%; margin-top: 20px;
+    width: 100%;
+    margin-top: 22px;
     padding: 12px;
-    background: #1D1D1E; color: #fff;
-    border: 0; border-radius: 7px;
-    font-family: inherit; font-size: 16px; font-weight: 500;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 15px; font-weight: 600;
+    letter-spacing: -0.01em;
     cursor: pointer;
-    transition: background .15s;
+    transition: background 120ms var(--ease);
   }
-  button:hover { background: #4A4A4C; }
-  .err { color: #FF3B30; font-size: 12px; margin-top: 10px; text-align: center; }
+  button:hover { background: var(--accent-hover); }
+  button:active { opacity: 0.85; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .err {
+    color: var(--accent);
+    font-size: 12.5px;
+    margin-top: 14px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -59,9 +137,9 @@
   <input type="hidden" name="next" value="{{ request.args.get('next', '/dashboard') }}">
   <div class="logo">S</div>
   <h1>Sophie</h1>
-  <div class="sub">Landing &middot; Dashboard &middot; Crea</div>
-  <label>Mot de passe</label>
-  <input type="password" name="password" autofocus required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+  <p class="sub">Landing · Dashboard · Crea</p>
+  <label for="pw">mot de passe</label>
+  <input id="pw" type="password" name="password" autofocus required placeholder="••••••••">
   <button type="submit">Entrer</button>
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
 </form>

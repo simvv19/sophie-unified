@@ -91,7 +91,7 @@ def require_auth(f):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("authed"):
-        return redirect(request.args.get("next", "/dashboard"))
+        return redirect(request.args.get("next", "/"))
     if request.method == "POST":
         if request.form.get("password") == APP_PASSWORD:
             session["authed"] = True
@@ -110,6 +110,11 @@ def logout():
 # =============================================================================
 
 @app.route("/")
+@require_auth
+def centrale():
+    return render_template("centrale.html")
+
+@app.route("/landing")
 @require_auth
 def landing():
     return render_template("landing.html")

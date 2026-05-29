@@ -6,7 +6,7 @@
 <title>Sophie · Acquisition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 {% endraw %}<script>window.__SB_URL='{{ supabase_url }}';window.__SB_KEY='{{ supabase_key }}';</script>{% raw %}
 <script>
@@ -18,27 +18,29 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
   :root {
+    --accent:#ff3b30; --accent-hover:#e62e24; --ring:rgba(255,59,48,0.30);
     --bg: #fafaf9;
     --card: #ffffff;
-    --border: #ebeae5;
-    --border-strong: #d9d7d0;
-    --text: #1a1a19;
+    --border: #e8e6e1;
+    --border-strong: #d4d1cb;
+    --text: #0a0a0a;
     --text-2: #5c5a55;
-    --text-3: #8e8b84;
+    --text-3: #8a8780;
     --text-4: #b8b5ad;
-    --accent: #1a1a19;
-    --accent-soft: #f4f3ef;
+    
+    --accent-soft: #f4f3f1;
     --positive: #15803d;
     --positive-bg: #ecfdf5;
     --negative: #b91c1c;
     --negative-bg: #fef2f2;
-    --hover: #f6f5f1;
+    --hover: #f1efea;
     --shadow-sm: 0 1px 2px rgba(20, 19, 17, 0.04);
     --shadow: 0 1px 3px rgba(20, 19, 17, 0.06), 0 1px 2px rgba(20, 19, 17, 0.04);
     --radius: 10px;
     --radius-sm: 6px;
   }
   html[data-theme="dark"] {
+    --accent:#ff5a4f; --accent-hover:#ff6f64; --ring:rgba(255,90,79,0.34);
     --bg: #0e0e0c;
     --card: #181816;
     --border: #2a2823;
@@ -47,7 +49,7 @@
     --text-2: #b5ad9d;
     --text-3: #7d7567;
     --text-4: #50493e;
-    --accent: #f4ede0;
+    
     --accent-soft: #1f1d18;
     --positive: #34d399;
     --positive-bg: rgba(52,211,153,0.12);
@@ -58,8 +60,8 @@
     --shadow: 0 1px 3px rgba(0,0,0,0.4);
   }
   html[data-theme="dark"] .brand-logo { background: var(--text); color: var(--bg); }
-  html[data-theme="dark"] button.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
-  html[data-theme="dark"] button.btn.primary:hover { opacity: 0.85; background: var(--text); }
+  html[data-theme="dark"] button.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  html[data-theme="dark"] button.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:#fff;}
   html[data-theme="dark"] tfoot td { background: var(--accent-soft); }
   html[data-theme="dark"] td[contenteditable]:focus { box-shadow: inset 0 0 0 1.5px var(--text-2); }
   html[data-theme="dark"] td[contenteditable]:hover { background: rgba(255,255,255,0.02); }
@@ -299,12 +301,8 @@
     display: inline-flex; align-items: center; gap: 6px;
   }
   button.btn:hover { border-color: var(--border-strong); background: var(--hover); }
-  button.btn.primary {
-    background: var(--text); color: white; border-color: var(--text);
-  }
-  button.btn.primary:hover {
-    background: #2c2b29; border-color: #2c2b29;
-  }
+  button.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  button.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:#fff;}
   button.btn svg { width: 13px; height: 13px; }
 
   .table-scroll { overflow-x: auto; }
@@ -451,35 +449,67 @@
     .row-2 { grid-template-columns: 1fr; }
     .header { flex-direction: column; align-items: flex-start; }
   }
-</style>
+
+  /* ---- ConquerorZ accent overrides ---- */
+  *:focus-visible:not(input):not(textarea):not(select):not([contenteditable]){outline:2px solid var(--accent);outline-offset:1px;border-radius:5px;}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--ring,rgba(255,59,48,0.30))!important;}
+  ::selection{background:rgba(255,59,48,0.16);}
+  .brand-logo{background:var(--accent)!important;color:#fff!important;}
+  </style>
 {% endraw %}
 
+<style id="brand-override">
+  :root, html[data-theme="dark"]{ --accent:#3B9DF7; --accent-deep:#1F7BD6; }
+  *, *::before, *::after { font-family:'Schibsted Grotesk', system-ui, -apple-system, sans-serif !important; }
+  /* hide-top-nav */ .topbar{ display:none !important; }
+  button.btn.primary, .btn.primary { background:#3B9DF7 !important; border-color:#3B9DF7 !important; color:#fff !important; }
+  button.btn.primary:hover, .btn.primary:hover { background:#1F7BD6 !important; border-color:#1F7BD6 !important; color:#fff !important; }
+  button.btn.primary:disabled, .btn.primary:disabled { background:transparent !important; color:var(--text-4) !important; border-color:var(--border) !important; }
+  .brand-mark { background:#3B9DF7 !important; color:#fff !important; }
+  .progress-fill { background:#3B9DF7 !important; }
+  .toggle input:checked + .toggle-track { background:#3B9DF7 !important; }
+  .canvas-tab.active, .seg button.active, .seg button[aria-selected="true"] { color:#1F7BD6 !important; }
+</style>
 </head>
 <body>
 <!-- SOPHIE UNIFIED NAV -->
-<div id="sophie-supernav" style="position:fixed;top:0;left:0;right:0;z-index:2147483600;background:rgba(10,10,8,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 20px;font-family:'Geist',-apple-system,sans-serif;">
-  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:40px;">
-    <div style="display:flex;align-items:center;gap:6px;">
-      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;padding:4px 10px 4px 6px;border-radius:6px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
-        <span style="width:20px;height:20px;background:#f4ede0;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#0e0e0c;">S</span>
-        <span style="color:#f4ede0;font-size:12px;font-weight:500;letter-spacing:-0.01em;">Sophie</span>
-      </a>
-      <span style="color:rgba(255,255,255,0.15);font-size:14px;margin:0 2px;">/</span>
-      <a href="/" id="_snLanding" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Landing</a>
-      <a href="/dashboard" id="_snDashboard" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Dashboard</a>
-      <a href="/crea" id="_snCrea" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Crea</a>
-    </div>
+<style>
+  #sophie-supernav{ position:fixed; top:0; left:0; right:0; z-index:2147483600; height:48px; background:rgba(250,250,249,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom:1px solid #E8E6E1; padding:0 18px; font-family:'Schibsted Grotesk',system-ui,sans-serif; }
+  #sophie-supernav .sn-inner{ max-width:1400px; margin:0 auto; height:48px; display:flex; align-items:center; gap:10px; }
+  #sophie-supernav .sn-logo{ display:flex; align-items:center; gap:9px; text-decoration:none; padding:5px 8px; border-radius:8px; transition:background .15s; }
+  #sophie-supernav .sn-logo:hover{ background:#F0EFEC; }
+  #sophie-supernav .sn-mark{ width:24px; height:24px; background:#3B9DF7; border-radius:7px; display:grid; place-items:center; font-size:12px; font-weight:800; color:#fff; }
+  #sophie-supernav .sn-brand{ color:#16150F; font-size:14px; font-weight:700; letter-spacing:-.02em; }
+  #sophie-supernav .sn-div{ width:1px; height:20px; background:#E2E0DB; margin:0 4px; }
+  #sophie-supernav .sn-tabs{ display:flex; align-items:center; gap:2px; }
+  #sophie-supernav .sn-tab{ padding:6px 13px; border-radius:8px; font-size:13px; font-weight:500; color:#615F58; text-decoration:none; transition:background .15s,color .15s; }
+  #sophie-supernav .sn-tab:hover{ background:#F0EFEC; color:#16150F; }
+  #sophie-supernav .sn-tab.active{ background:#E4F1FE; color:#1F7BD6; font-weight:600; }
+  html[data-theme="dark"] #sophie-supernav{ background:rgba(20,20,18,0.85); border-bottom-color:#2a2823; }
+  html[data-theme="dark"] #sophie-supernav .sn-brand{ color:#f4ede0; }
+  html[data-theme="dark"] #sophie-supernav .sn-tab{ color:#b5ad9d; }
+  html[data-theme="dark"] #sophie-supernav .sn-tab:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+  html[data-theme="dark"] #sophie-supernav .sn-tab.active{ background:rgba(59,157,247,0.18); color:#7CC0FF; }
+  body{ padding-top:48px !important; }
+</style>
+<div id="sophie-supernav">
+  <div class="sn-inner">
+    <a href="/" class="sn-logo"><span class="sn-mark"><svg viewBox="-7 -7 88 86" width="16" height="16"><path d="M34.376 9.28651C17.326 14.3365 2.57505 18.7825 1.59705 19.1655C-0.0049535 19.7925 -0.153954 21.1865 0.0970465 33.1325C0.360046 45.6525 0.492046 46.4195 2.43105 46.6965C4.18305 46.9475 32.653 27.7735 58.274 9.08751C60.968 7.12251 62.993 6.04851 62.774 6.69951C62.555 7.35151 49.526 21.0505 33.82 37.1435C18.114 53.2355 4.91205 66.9845 4.48405 67.6965C4.05505 68.4075 4.24805 69.6455 4.91205 70.4465C5.83305 71.5565 8.67905 71.9025 16.874 71.9025H27.627L41.453 50.6525C66.245 12.5475 68.093 9.78651 68.519 10.2115C68.75 10.4435 64.187 23.4055 58.378 39.0175C52.569 54.6295 47.943 68.3025 48.096 69.4025C48.355 71.2495 49.247 71.4245 59.733 71.6865C67.25 71.8745 71.561 71.5795 72.483 70.8135C73.622 69.8685 73.876 63.6635 73.876 36.7805C73.876 5.23551 73.795 3.82151 71.876 1.90251C70.776 0.802513 68.863 -0.0524882 67.626 0.00251179C66.389 0.0585118 51.426 4.23551 34.376 9.28651Z" fill="#fff"/></svg></span><span class="sn-brand">Conqueror<span style="color:#3B9DF7">Z</span></span></a>
+    <span class="sn-div"></span>
+    <nav class="sn-tabs">
+      <a href="/" id="_snLanding" class="sn-tab">Landing</a>
+      <a href="/dashboard" id="_snDashboard" class="sn-tab">Dashboard</a>
+      <a href="/crea" id="_snCrea" class="sn-tab">Crea</a>
+    </nav>
   </div>
 </div>
 <script>
 (function(){
   var p=location.pathname;
-  var id=p.startsWith('/dashboard')?'_snDashboard':p.startsWith('/crea')?'_snCrea':'_snLanding';
-  var el=document.getElementById(id);
-  if(el){el.style.color='#f4ede0';el.style.background='rgba(255,255,255,0.08)';el.classList.add('_sn-active');}
+  var id=p.indexOf('/dashboard')>-1?'_snDashboard':p.indexOf('/crea')>-1?'_snCrea':'_snLanding';
+  var el=document.getElementById(id); if(el) el.classList.add('active');
 })();
 </script>
-<style>body{padding-top:40px !important;}</style>
 <!-- /SOPHIE UNIFIED NAV -->
 {% raw %}
 <div class="layout">
@@ -683,7 +713,7 @@ async function sbDeleteDay(date) {
 /* ============ THEME ============ */
 const THEME_KEY = 'sophie_theme';
 function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
-function inkColor() { return isDark() ? '#f4ede0' : '#1a1a19'; }
+function inkColor() { return isDark() ? '#f4ede0' : '#0a0a0a'; }
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   document.getElementById('iconSun').style.display = t === 'dark' ? '' : 'none';
@@ -1020,7 +1050,7 @@ function renderMainChart() {
     const v = r[c.key]; if (v != null && v !== '' && !isNaN(v)) all.push(Number(v));
   }));
   if (all.length === 0 || rows.length === 0) {
-    svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="${isDark() ? '#7d7567' : '#8e8b84'}" text-anchor="middle" font-family="Geist" font-size="13">Pas encore de données</text>`;
+    svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="${isDark() ? '#7d7567' : '#8a8780'}" text-anchor="middle" font-family="Geist" font-size="13">Pas encore de données</text>`;
     renderLegend(); return;
   }
   const yMin = 0, yMax = Math.max(...all)*1.08 || 1;
@@ -1032,14 +1062,14 @@ function renderMainChart() {
   for (let i = 0; i <= 4; i++) {
     const yv = yMin + (yMax-yMin)*(i/4);
     const yy = y(yv);
-    gridSvg += `<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${isDark() ? '#2a2823' : '#ebeae5'}" stroke-width="1" stroke-dasharray="${i===0?'':'2,3'}"/>`;
-    gridSvg += `<text x="${padL-10}" y="${yy+3}" fill="${isDark() ? '#7d7567' : '#8e8b84'}" text-anchor="end" font-family="Geist Mono" font-size="10">${formatYTick(yv)}</text>`;
+    gridSvg += `<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${isDark() ? '#2a2823' : '#e8e6e1'}" stroke-width="1" stroke-dasharray="${i===0?'':'2,3'}"/>`;
+    gridSvg += `<text x="${padL-10}" y="${yy+3}" fill="${isDark() ? '#7d7567' : '#8a8780'}" text-anchor="end" font-family="Geist Mono" font-size="10">${formatYTick(yv)}</text>`;
   }
   let xLabels = '';
   const every = Math.max(1, Math.ceil(N/8));
   rows.forEach((r,i) => {
     if (i % every === 0 || i === N-1) {
-      xLabels += `<text x="${x(i)}" y="${H-10}" fill="${isDark() ? '#7d7567' : '#8e8b84'}" text-anchor="middle" font-family="Geist Mono" font-size="10">${formatDateShort(r.date)}</text>`;
+      xLabels += `<text x="${x(i)}" y="${H-10}" fill="${isDark() ? '#7d7567' : '#8a8780'}" text-anchor="middle" font-family="Geist Mono" font-size="10">${formatDateShort(r.date)}</text>`;
     }
   });
 
@@ -1157,14 +1187,14 @@ function renderBarChart(svgId, key, color, totalId) {
       bars += `<rect x="${padL+i*bw+bw*0.18}" y="${yTop}" width="${bw*0.64}" height="${h}" fill="${color}" rx="2" data-v="${v}" data-d="${r.date}"/>`;
     }
     if (i % every === 0 || i === N-1) {
-      xLabels += `<text x="${xc}" y="${H-9}" fill="${isDark() ? '#7d7567' : '#8e8b84'}" text-anchor="middle" font-family="Geist Mono" font-size="10">${formatDateShort(r.date)}</text>`;
+      xLabels += `<text x="${xc}" y="${H-9}" fill="${isDark() ? '#7d7567' : '#8a8780'}" text-anchor="middle" font-family="Geist Mono" font-size="10">${formatDateShort(r.date)}</text>`;
     }
   });
   let yTicks = '';
   for (let i = 0; i <= 3; i++) {
     const yv = max*(i/3), yy = padT + innerH - (yv/max)*innerH;
-    yTicks += `<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${isDark() ? '#2a2823' : '#ebeae5'}" stroke-width="1" stroke-dasharray="${i===0?'':'2,3'}"/>`;
-    yTicks += `<text x="${padL-8}" y="${yy+3}" fill="${isDark() ? '#7d7567' : '#8e8b84'}" text-anchor="end" font-family="Geist Mono" font-size="10">${formatYTick(yv)}</text>`;
+    yTicks += `<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="${isDark() ? '#2a2823' : '#e8e6e1'}" stroke-width="1" stroke-dasharray="${i===0?'':'2,3'}"/>`;
+    yTicks += `<text x="${padL-8}" y="${yy+3}" fill="${isDark() ? '#7d7567' : '#8a8780'}" text-anchor="end" font-family="Geist Mono" font-size="10">${formatYTick(yv)}</text>`;
   }
   svg.innerHTML = yTicks + bars + xLabels;
   // bar tooltip
