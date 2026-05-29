@@ -1,0 +1,237 @@
+{% raw %}<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<link rel="icon" type="image/svg+xml" href="/static/assets/logo-conquerorz.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ConquerorZ · Comptes VA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#FAFAF9; --card:#FFFFFF; --border:#E8E6E1; --border-strong:#D4D1CB;
+    --ink:#16150F; --muted:#615F58; --subtle:#94908A; --muted-bg:#F4F3F1;
+    --accent:#3B9DF7; --accent-deep:#1F7BD6; --accent-soft:#E4F1FE;
+    --red:#E5484D; --red-bg:#FFF0F0;
+    --green:#15803d; --green-bg:#ecfdf5;
+    --orange:#b45309; --orange-bg:#fffbeb;
+    --radius:10px;
+    --shadow-lg:0 12px 32px rgba(0,0,0,0.10);
+  }
+  * { box-sizing:border-box; margin:0; }
+  html,body { background:var(--bg); }
+  body { font-family:'Schibsted Grotesk',system-ui,sans-serif; color:var(--ink); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  .layout { max-width:960px; margin:0 auto; padding:32px 28px 64px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; gap:16px; }
+  .header h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; }
+  .header .sub { color:var(--subtle); font-size:13px; }
+  .btn { font-family:inherit; font-size:12px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--ink); cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
+  .btn:hover { border-color:var(--border-strong); background:var(--muted-bg); }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.primary:hover { background:var(--accent-deep); }
+  .btn.danger { color:var(--red); }
+  .btn.danger:hover { background:var(--red-bg); }
+  .btn svg { width:14px; height:14px; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .stat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; }
+  .stat .val { font-size:28px; font-weight:800; letter-spacing:-0.02em; }
+  .stat .lbl { font-size:12px; color:var(--subtle); margin-top:2px; }
+  .table-wrap { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { text-align:left; padding:12px 16px; font-size:13px; border-bottom:1px solid var(--border); }
+  th { color:var(--subtle); font-weight:600; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; background:var(--muted-bg); }
+  tr:last-child td { border-bottom:0; }
+  tr:hover td { background:rgba(59,157,247,0.03); }
+  .badge { display:inline-flex; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; }
+  .badge-active { background:var(--green-bg); color:var(--green); }
+  .badge-banned { background:var(--red-bg); color:var(--red); }
+  .badge-warming { background:var(--orange-bg); color:var(--orange); }
+  .warmup-tag { display:inline-flex; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; background:var(--accent-soft); color:var(--accent-deep); }
+  .row-actions { display:flex; gap:4px; justify-content:flex-end; }
+  .row-actions button { background:none; border:0; cursor:pointer; padding:5px 8px; border-radius:6px; color:var(--subtle); font-size:11px; font-weight:600; font-family:inherit; }
+  .row-actions button:hover { background:var(--muted-bg); color:var(--ink); }
+  .row-actions button.del:hover { background:var(--red-bg); color:var(--red); }
+  .empty { text-align:center; padding:48px; color:var(--subtle); font-size:14px; }
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.45); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:200; }
+  .modal-bg.show { display:flex; }
+  .modal { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:28px; width:100%; max-width:480px; box-shadow:var(--shadow-lg); max-height:90vh; overflow-y:auto; }
+  .modal h3 { margin:0 0 4px; font-size:18px; font-weight:700; }
+  .modal-sub { color:var(--subtle); font-size:12px; margin-bottom:20px; }
+  .form-grid { display:grid; gap:14px; overflow:hidden; min-width:0; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0; }
+  .field { display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .field label { font-size:11px; font-weight:700; color:var(--subtle); text-transform:uppercase; letter-spacing:0.04em; }
+  .field input, .field select { font-family:inherit; font-size:13px; padding:9px 12px; width:100%; min-width:0; box-sizing:border-box; border-radius:8px; border:1px solid var(--border-strong); background:var(--bg); color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s; }
+  .field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,157,247,0.15); }
+  .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:22px; padding-top:16px; border-top:1px solid var(--border); }
+  .modal-footer .btn.danger { margin-right:auto; }
+  .msg { font-size:12px; padding:8px 12px; border-radius:8px; margin-top:12px; font-weight:500; }
+  .msg.ok { background:var(--green-bg); color:var(--green); }
+  .msg.err { background:var(--red-bg); color:var(--red); }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="header">
+    <div>
+      <h1>Comptes VA</h1>
+      <div class="sub">G&egrave;re les comptes de tes assistants virtuels.</div>
+    </div>
+    <button class="btn primary" id="addBtn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      Ajouter
+    </button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="val" id="totalCount">0</div><div class="lbl">Total</div></div>
+    <div class="stat"><div class="val" id="activeCount">0</div><div class="lbl">Actifs</div></div>
+    <div class="stat"><div class="val" id="warmingCount">0</div><div class="lbl">En warm-up</div></div>
+    <div class="stat"><div class="val" id="bannedCount">0</div><div class="lbl">Bannis</div></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Username</th><th>Email</th><th>Plateforme</th><th>Warm-up</th><th>Statut</th><th>Cr&eacute;&eacute; le</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none;">Aucun compte VA pour l'instant</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Ajouter un compte VA</h3>
+    <div class="modal-sub" id="modalSub">Cr&eacute;e un compte avec ses identifiants.</div>
+    <input type="hidden" id="mId" />
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="field"><label>Username</label><input id="mUser" placeholder="@username" /></div>
+        <div class="field"><label>Email</label><input id="mEmail" type="email" placeholder="va@email.com" /></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Mot de passe</label><input id="mPass" type="text" placeholder="mot de passe" autocomplete="off" /></div>
+        <div class="field"><label>Plateforme</label>
+          <select id="mPlatform">
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="twitter">Twitter / X</option>
+            <option value="facebook">Facebook</option>
+            <option value="threads">Threads</option>
+            <option value="other">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Statut</label>
+          <select id="mStatus">
+            <option value="active">Actif</option>
+            <option value="warming">En warm-up</option>
+            <option value="banned">Banni</option>
+          </select>
+        </div>
+        <div class="field"><label>Jour warm-up</label><input id="mWarmup" type="number" min="0" value="0" placeholder="0" /></div>
+      </div>
+    </div>
+    <div id="modalMsg"></div>
+    <div class="modal-footer">
+      <button class="btn danger" id="delBtn" style="display:none;">Supprimer</button>
+      <button class="btn" data-close>Fermer</button>
+      <button class="btn primary" id="saveBtn">Cr&eacute;er</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let accounts = [];
+async function loadAccounts(){
+  const r = await fetch('/api/va-accounts');
+  const j = await r.json();
+  accounts = j.accounts || [];
+  render();
+}
+function warmupLabel(day, status){
+  if(status==='warming' && day>=0) return 'J'+day;
+  if(status==='active') return 'Terminé';
+  return '—';
+}
+function render(){
+  const tbody=document.getElementById('tbody'), empty=document.getElementById('empty');
+  document.getElementById('totalCount').textContent=accounts.length;
+  document.getElementById('activeCount').textContent=accounts.filter(a=>a.status==='active').length;
+  document.getElementById('warmingCount').textContent=accounts.filter(a=>a.status==='warming').length;
+  document.getElementById('bannedCount').textContent=accounts.filter(a=>a.status==='banned').length;
+  if(!accounts.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=accounts.map(a=>{
+    const date=a.created_at?new Date(a.created_at).toLocaleDateString('fr-FR'):'—';
+    const wu=warmupLabel(a.warmup_day,a.status);
+    return `<tr>
+      <td style="font-weight:600">${a.username||'—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${a.email||'—'}</td>
+      <td>${a.platform||'—'}</td>
+      <td>${wu!=='—'?`<span class="warmup-tag">${wu}</span>`:'—'}</td>
+      <td><span class="badge badge-${a.status}">${a.status}</span></td>
+      <td style="color:var(--subtle);font-size:12px">${date}</td>
+      <td><div class="row-actions"><button data-edit="${a.id}">Modifier</button><button class="del" data-del="${a.id}">Suppr</button></div></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openModal(b.dataset.edit));
+  tbody.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Supprimer ce compte VA ?'))return;
+    await fetch('/api/va-accounts/'+b.dataset.del,{method:'DELETE'});
+    await loadAccounts();
+  });
+}
+function openModal(id){
+  const isNew=!id, a=isNew?null:accounts.find(x=>x.id===id);
+  document.getElementById('modalTitle').textContent=isNew?'Ajouter un compte VA':'Modifier le compte';
+  document.getElementById('modalSub').textContent=isNew?'Crée un compte avec ses identifiants.':'Modifie les infos de ce compte.';
+  document.getElementById('mId').value=id||'';
+  document.getElementById('mUser').value=a?.username||'';
+  document.getElementById('mEmail').value=a?.email||'';
+  document.getElementById('mPass').value=a?.password||'';
+  document.getElementById('mPlatform').value=a?.platform||'instagram';
+  document.getElementById('mStatus').value=a?.status||'active';
+  document.getElementById('mWarmup').value=a?.warmup_day||0;
+  document.getElementById('delBtn').style.display=isNew?'none':'inline-flex';
+  document.getElementById('saveBtn').textContent=isNew?'Créer':'Enregistrer';
+  document.getElementById('modalMsg').innerHTML='';
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+document.getElementById('addBtn').onclick=()=>openModal(null);
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+document.getElementById('delBtn').onclick=async()=>{
+  const id=document.getElementById('mId').value;
+  if(!id||!confirm('Supprimer ce compte VA ?'))return;
+  await fetch('/api/va-accounts/'+id,{method:'DELETE'});
+  closeModal(); await loadAccounts();
+};
+document.getElementById('saveBtn').onclick=async()=>{
+  const id=document.getElementById('mId').value;
+  const username=document.getElementById('mUser').value.trim();
+  const email=document.getElementById('mEmail').value.trim();
+  const password=document.getElementById('mPass').value;
+  const platform=document.getElementById('mPlatform').value;
+  const status=document.getElementById('mStatus').value;
+  const warmup_day=parseInt(document.getElementById('mWarmup').value)||0;
+  if(!username){showMsg('Username requis','err');return;}
+  const body={username,email,password,platform,status,warmup_day};
+  if(id){
+    const r=await fetch('/api/va-accounts/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json();
+    if(j.ok){showMsg('Enregistré','ok');await loadAccounts();}else showMsg(j.error||'Erreur','err');
+  } else {
+    const r=await fetch('/api/va-accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json();
+    if(j.ok){showMsg('Compte créé !','ok');await loadAccounts();setTimeout(closeModal,1200);}else showMsg(j.error||'Erreur','err');
+  }
+};
+function showMsg(txt,type){document.getElementById('modalMsg').innerHTML=`<div class="msg ${type}">${txt}</div>`;}
+loadAccounts();
+</script>
+</body>
+</html>
+{% endraw %}

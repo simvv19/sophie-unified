@@ -10,6 +10,7 @@ import shutil
 import threading
 import time
 import uuid
+from datetime import datetime
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
@@ -115,8 +116,9 @@ def get_current_user():
 
 def _load_permissions(email):
     """Fetch services + role from members table (cached in session for 5 min)."""
+    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","phantom","music"]
     if email == ADMIN_EMAIL:
-        return {"services": ["landing", "dashboard", "crea"], "is_admin": True, "name": "Admin"}
+        return {"services": ["landing", "dashboard", "crea"], "pages": ALL_PAGES, "is_admin": True, "name": "Admin"}
     cached = session.get("_perms")
     if cached and cached.get("email") == email and (time.time() - cached.get("ts", 0)) < 300:
         return cached
@@ -126,13 +128,14 @@ def _load_permissions(email):
         headers["Authorization"] = f"Bearer {key}"
         r = requests.get(
             f"{SUPABASE_URL}/rest/v1/members",
-            params={"email": f"eq.{email}", "select": "services,role,name"},
+            params={"email": f"eq.{email}", "select": "services,role,name,pages"},
             headers=headers, timeout=5,
         )
         if r.status_code == 200 and r.json():
             m = r.json()[0]
             perms = {
                 "services": m.get("services") or [],
+                "pages": m.get("pages") or [],
                 "is_admin": m.get("role") == "admin",
                 "name": m.get("name", ""),
                 "email": email,
@@ -142,7 +145,7 @@ def _load_permissions(email):
             return perms
     except Exception:
         pass
-    return {"services": [], "is_admin": False, "name": "", "email": email, "ts": time.time()}
+    return {"services": [], "pages": [], "is_admin": False, "name": "", "email": email, "ts": time.time()}
 
 
 def require_auth(f):
@@ -275,7 +278,7 @@ def api_members_create():
     # Insert member in table
     r = requests.post(
         f"{SUPABASE_URL}/rest/v1/members",
-        json={"name": name, "email": email, "services": services, "role": role},
+        json={"name": name, "email": email, "services": services, "role": role, "pages": data.get("pages", [])},
         headers=headers, timeout=10,
     )
     member = r.json()[0] if r.status_code in (200, 201) and r.json() else None
@@ -292,6 +295,7 @@ def api_members_update(member_id):
     if "name" in data: update["name"] = data["name"].strip()
     if "email" in data: update["email"] = data["email"].strip().lower()
     if "services" in data: update["services"] = data["services"]
+    if "pages" in data: update["pages"] = data["pages"]
     if "role" in data: update["role"] = data["role"]
     if not update:
         return jsonify(error="nothing to update"), 400
@@ -333,6 +337,7 @@ def centrale():
     user = request.user
     return render_template("centrale.html",
                            user_services=json.dumps(user.get("services", [])),
+                           user_pages=json.dumps(user.get("pages", [])),
                            user_email=user.get("email", ""),
                            is_admin=user.get("is_admin", False))
 
@@ -353,6 +358,7 @@ DASHBOARD_PAGES = {
     "emails": "dashboard/emails.html",
     "tasks": "dashboard/tasks.html",
     "strategies": "dashboard/strategies.html",
+    "comptes-va": "dashboard/comptes-va.html",
     "ads": "dashboard/ads.html",
     "proxy": "dashboard/proxy.html",
     "mails-va": "dashboard/mails-va.html",
@@ -1334,6 +1340,77 @@ def proxy_ip():
         return jsonify(ip=ip_r.text.strip())
     except Exception as e:
         return jsonify(error=str(e)), 500
+
+
+# =============================================================================
+# VA Accounts API
+# =============================================================================
+
+def _sb_headers():
+    key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+    return {"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json", "Prefer": "return=representation"}
+
+@app.route("/api/va-accounts")
+@require_auth
+@require_service("dashboard")
+def va_accounts_list():
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/va_accounts",
+                     params={"select": "*", "order": "created_at.desc"},
+                     headers=_sb_headers(), timeout=10)
+    return jsonify(accounts=r.json() if r.status_code == 200 else [])
+
+@app.route("/api/va-accounts", methods=["POST"])
+@require_auth
+@require_service("dashboard")
+def va_accounts_create():
+    d = request.json or {}
+    username = (d.get("username") or "").strip()
+    if not username:
+        return jsonify(error="Username requis"), 400
+    row = {
+        "username": username,
+        "email": (d.get("email") or "").strip(),
+        "password": (d.get("password") or "").strip(),
+        "platform": d.get("platform", "instagram"),
+        "status": "active",
+        "warmup_day": 0,
+        "warmup_started_at": datetime.utcnow().isoformat(),
+        "pages": d.get("pages", []),
+    }
+    r = requests.post(f"{SUPABASE_URL}/rest/v1/va_accounts",
+                      json=row, headers=_sb_headers(), timeout=10)
+    if r.status_code in (200, 201):
+        return jsonify(ok=True, account=r.json()[0] if r.json() else {})
+    return jsonify(error="Erreur création"), 500
+
+@app.route("/api/va-accounts/<aid>", methods=["PATCH"])
+@require_auth
+@require_service("dashboard")
+def va_accounts_update(aid):
+    d = request.json or {}
+    patch = {}
+    for k in ("username", "email", "password", "platform", "status", "warmup_day", "pages"):
+        if k in d:
+            patch[k] = d[k]
+    patch["updated_at"] = datetime.utcnow().isoformat()
+    r = requests.patch(f"{SUPABASE_URL}/rest/v1/va_accounts",
+                       params={"id": f"eq.{aid}"},
+                       json=patch, headers=_sb_headers(), timeout=10)
+    if r.status_code in (200, 201):
+        return jsonify(ok=True)
+    return jsonify(error="Erreur mise à jour"), 500
+
+@app.route("/api/va-accounts/<aid>", methods=["DELETE"])
+@require_auth
+@require_service("dashboard")
+def va_accounts_delete(aid):
+    r = requests.delete(f"{SUPABASE_URL}/rest/v1/va_accounts",
+                        params={"id": f"eq.{aid}"},
+                        headers=_sb_headers(), timeout=10)
+    if r.status_code in (200, 204):
+        return jsonify(ok=True)
+    return jsonify(error="Erreur suppression"), 500
 
 
 if __name__ == "__main__":

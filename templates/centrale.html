@@ -104,6 +104,7 @@
 
 <script>
 const USER_SERVICES = {{ user_services|safe }};
+const USER_PAGES = {{ user_pages|safe }};
 const USER_EMAIL = '{{ user_email }}';
 const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
 
@@ -135,10 +136,10 @@ const ALL_GROUPS = [
     { id:"acq",     label:"Acquisition", src:"/dashboard",             icon:"chart" },
     { id:"flotte",  label:"Flotte",      src:"/dashboard/flotte",      icon:"phone" },
     { id:"emails",  label:"Emails",      src:"/dashboard/emails",      icon:"mail" },
-    { id:"strat",   label:"Stratégies",  src:"/dashboard/strategies",  icon:"target" },
     { id:"ads",     label:"Ads",         src:"/dashboard/ads",         icon:"mega" },
     { id:"proxy",   label:"Proxy",       src:"/dashboard/proxy",       icon:"shield" },
     { id:"mailsva", label:"Mails VA",    src:"/dashboard/mails-va",    icon:"inbox" },
+    { id:"comptesva", label:"Comptes VA", src:"/dashboard/comptes-va",  icon:"users" },
   ]},
   { g:"Créa", svc:"crea", items:[
     { id:"phantom", label:"Phantom", src:"/crea#phantom", icon:"ghost" },
@@ -149,11 +150,12 @@ const ALL_GROUPS = [
   ]},
 ];
 
-// Filter groups by user permissions
-const GROUPS = ALL_GROUPS.filter(g => {
-  if(g.admin) return IS_ADMIN;
-  return !g.svc || USER_SERVICES.includes(g.svc);
-});
+// Filter groups and items by user page permissions
+const GROUPS = ALL_GROUPS.map(g => {
+  if(g.admin) return IS_ADMIN ? g : null;
+  const filtered = g.items.filter(it => USER_PAGES.includes(it.id));
+  return filtered.length ? {...g, items:filtered} : null;
+}).filter(Boolean);
 const ALL = GROUPS.flatMap(g => g.items.map(it => ({...it, group:g.g})));
 const byId = Object.fromEntries(ALL.map(it => [it.id, it]));
 
