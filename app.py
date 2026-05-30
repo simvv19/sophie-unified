@@ -268,8 +268,27 @@ def api_members_create():
             else:
                 err_body = auth_r.json() if auth_r.headers.get("content-type","").startswith("application/json") else {}
                 err_msg = err_body.get("msg") or err_body.get("message") or str(auth_r.status_code)
-                # If user already exists in auth, that's fine — just add to members table
+                # If user already exists in auth, update their password and continue
                 if "already" in err_msg.lower() or auth_r.status_code == 422:
+                    # Find existing user and update password
+                    try:
+                        list_r = requests.get(
+                            f"{SUPABASE_URL}/auth/v1/admin/users",
+                            headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"},
+                            timeout=10,
+                        )
+                        if list_r.status_code == 200:
+                            for u in list_r.json().get("users", []):
+                                if u.get("email", "").lower() == email:
+                                    requests.put(
+                                        f"{SUPABASE_URL}/auth/v1/admin/users/{u['id']}",
+                                        json={"password": password},
+                                        headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}", "Content-Type": "application/json"},
+                                        timeout=10,
+                                    )
+                                    break
+                    except Exception:
+                        pass
                     auth_ok = True
                 else:
                     auth_err = err_msg
