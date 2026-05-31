@@ -3,4 +3,4 @@ __pycache__/
 .env
 phantom_jobs/
 .claude/
-*.mp4
+phantom_jobs/*.mp4
