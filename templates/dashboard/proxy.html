@@ -4,220 +4,168 @@
 <meta charset="utf-8" />
 <link rel="icon" type="image/svg+xml" href="/static/assets/logo-conquerorz.svg" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sophie · Proxy</title>
+<title>ConquerorZ · Proxy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-{% endraw %}<script>window.__SB_URL='{{ supabase_url }}';window.__SB_KEY='{{ supabase_key }}';</script>{% raw %}
-<script>
-  var sb = window.supabase.createClient(window.__SB_URL, window.__SB_KEY);
-  window.SOPHIE_MEMBER = { role: 'admin', pages: ['acquisition','flotte','emails','tasks','strategies','ads','proxy','mails','members'], workspace_ids: [] };
-</script>
-
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --accent:#3B9DF7; --accent-hover:#1F7BD6; --ring:rgba(59,157,247,0.30);
-    --bg:#fafaf9; --card:#fff; --border:#e8e6e1; --border-strong:#d4d1cb;
-    --text:#0a0a0a; --text-2:#5c5a55; --text-3:#8a8780; --text-4:#b8b5ad;
-    --accent-soft:#f4f3f1; --hover:#f1efea;
-    --positive:#15803d; --positive-bg:#ecfdf5;
-    --negative:#b91c1c; --negative-bg:#fef2f2;
-    --info:#1d4ed8; --info-bg:#eff6ff;
+    --bg:#FAFAF9; --card:#FFFFFF; --border:#E8E6E1; --border-strong:#D4D1CB;
+    --ink:#16150F; --muted:#615F58; --subtle:#94908A; --muted-bg:#F4F3F1;
+    --accent:#3B9DF7; --accent-deep:#1F7BD6; --accent-soft:#E4F1FE;
+    --green:#15803d; --green-bg:#ecfdf5;
+    --red:#E5484D; --red-bg:#FFF0F0;
     --radius:10px;
-    --shadow-sm:0 1px 2px rgba(20,19,17,0.04);
-    --shadow:0 1px 3px rgba(20,19,17,0.06);
-    --shadow-lg:0 10px 25px rgba(20,19,17,0.10);
   }
-  html[data-theme="dark"] {
-    --accent:#5BA8F5; --accent-hover:#7CC0FF; --ring:rgba(124,192,255,0.34);
-    --bg:#0e0e0c; --card:#181816; --border:#2a2823; --border-strong:#3a3730;
-    --text:#f4ede0; --text-2:#b5ad9d; --text-3:#7d7567; --text-4:#50493e;
-    --accent-soft:#1f1d18; --hover:#1f1d18;
-    --positive:#34d399; --positive-bg:rgba(52,211,153,0.12);
-    --negative:#f87171; --negative-bg:rgba(248,113,113,0.12);
-    --info:#60a5fa; --info-bg:rgba(96,165,250,0.12);
-    --shadow-lg:0 10px 25px rgba(0,0,0,0.5);
-  }
-  * { box-sizing:border-box; }
-  html { background:var(--bg); }
-  body { margin:0; background:var(--bg); color:var(--text); font-family:"Geist",-apple-system,sans-serif; font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
-  .mono { font-family:"Geist Mono",monospace; }
-  .layout { max-width:1240px; margin:0 auto; padding:32px 32px 96px; }
-  .topbar { display:flex; justify-content:space-between; align-items:center; padding:10px 0 28px; border-bottom:1px solid var(--border); margin-bottom:28px; }
-  .brand { display:flex; align-items:center; gap:10px; font-weight:600; font-size:14px; letter-spacing:-0.01em; }
-  .brand-logo { width:24px; height:24px; background:var(--text); color:var(--bg); border-radius:6px; display:grid; place-items:center; font-weight:600; font-size:12px; }
-  nav.tabs { display:flex; gap:4px; margin-left:18px; }
-  nav.tabs a { padding:5px 10px; border-radius:6px; font-size:13px; font-weight:500; color:var(--text-3); text-decoration:none; transition:all .15s; }
-  nav.tabs a.active { color:var(--text); background:var(--accent-soft); }
-  nav.tabs a:hover { color:var(--text); }
-  .theme-toggle { width:32px; height:32px; display:grid; place-items:center; border:1px solid var(--border); background:var(--card); border-radius:8px; cursor:pointer; color:var(--text-2); }
-  .theme-toggle svg { width:15px; height:15px; }
-
+  * { box-sizing:border-box; margin:0; }
+  html,body { background:var(--bg); }
+  body { font-family:'Schibsted Grotesk',system-ui,sans-serif; color:var(--ink); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  .layout { max-width:960px; margin:0 auto; padding:32px 28px 64px; }
   .header { margin-bottom:28px; }
-  .header h1 { font-size:26px; font-weight:600; margin:0 0 4px; letter-spacing:-0.02em; }
-  .header .sub { color:var(--text-3); font-size:13px; }
+  .header h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; }
+  .header .sub { color:var(--subtle); font-size:13px; }
 
-  .proxy-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:32px; max-width:520px; margin:0 auto; text-align:center; }
-  .proxy-name { font-size:13px; color:var(--text-3); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; margin-bottom:20px; }
-  .proxy-icon { width:64px; height:64px; border-radius:16px; background:var(--accent-soft); display:grid; place-items:center; margin:0 auto 20px; }
-  .proxy-icon svg { width:30px; height:30px; color:var(--text-2); }
+  .proxy-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:20px; }
+
+  .proxy-card {
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:28px; text-align:center; transition:border-color .15s;
+  }
+  .proxy-card:hover { border-color:var(--border-strong); }
+  .proxy-name {
+    font-size:18px; font-weight:700; letter-spacing:-0.01em; margin-bottom:4px;
+  }
+  .proxy-host { font-size:11px; color:var(--subtle); font-family:monospace; margin-bottom:20px; }
+  .proxy-ip {
+    font-family:monospace; font-size:26px; font-weight:700; letter-spacing:-0.02em;
+    color:var(--ink); margin:8px 0 4px;
+  }
+  .proxy-ip.loading { color:var(--subtle); font-size:14px; }
+  .ip-label { font-size:12px; color:var(--subtle); margin-bottom:20px; }
+
   .rotate-btn {
-    font-family:inherit; font-size:15px; font-weight:600;
-    padding:14px 32px; border-radius:10px; border:0;
-    background:var(--text); color:var(--bg); cursor:pointer;
-    display:inline-flex; align-items:center; gap:10px;
+    font-family:inherit; font-size:14px; font-weight:600;
+    padding:12px 28px; border-radius:10px; border:0;
+    background:var(--ink); color:#fff; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
     transition:all .15s;
   }
   .rotate-btn:hover:not(:disabled) { opacity:0.85; }
-  .rotate-btn:disabled { opacity:0.5; cursor:default; }
-  .rotate-btn svg { width:18px; height:18px; transition:transform .6s ease; }
-  .rotate-btn.spinning svg { transform:rotate(360deg); }
-  .result { margin-top:24px; min-height:24px; }
-  .result .badge { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; font-size:14px; font-weight:500; }
-  .result .badge.ok { background:var(--positive-bg); color:var(--positive); }
-  .result .badge.err { background:var(--negative-bg); color:var(--negative); }
-  .last-rotate { margin-top:18px; font-family:"Geist Mono",monospace; font-size:12px; color:var(--text-3); }
+  .rotate-btn:disabled { opacity:0.4; cursor:default; }
+  .rotate-btn svg { width:16px; height:16px; transition:transform .6s ease; }
+  .rotate-btn.spinning svg { animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
 
-  /* ---- ConquerorZ accent overrides ---- */
-  *:focus-visible:not(input):not(textarea):not(select):not([contenteditable]){outline:2px solid var(--accent);outline-offset:1px;border-radius:5px;}
-  input:focus,textarea:focus,select:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--ring,rgba(59,157,247,0.30))!important;}
-  ::selection{background:rgba(59,157,247,0.16);}
-  .brand-logo{background:var(--accent)!important;color:#fff!important;}
-  </style>
-{% endraw %}
-
-<style id="brand-override">
-  *, *::before, *::after { font-family:'Schibsted Grotesk', system-ui, -apple-system, sans-serif !important; }
-  /* hide-top-nav */ .topbar{ display:none !important; }
-  nav.tabs a.active{ background:#E4F1FE !important; color:#1F7BD6 !important; }
+  .result { margin-top:16px; min-height:24px; }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:500; }
+  .badge.ok { background:var(--green-bg); color:var(--green); }
+  .badge.err { background:var(--red-bg); color:var(--red); }
+  .badge.loading { background:var(--accent-soft); color:var(--accent-deep); }
+  .last-rotate { margin-top:12px; font-family:monospace; font-size:11px; color:var(--subtle); }
 </style>
 </head>
 <body>
-<!-- SOPHIE UNIFIED NAV -->
-<div id="sophie-supernav" style="position:fixed;top:0;left:0;right:0;z-index:2147483600;background:rgba(10,10,8,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 20px;font-family:'Geist',-apple-system,sans-serif;">
-  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:40px;">
-    <div style="display:flex;align-items:center;gap:6px;">
-      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;padding:4px 10px 4px 6px;border-radius:6px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
-        <span style="width:20px;height:20px;background:#3B9DF7;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;">S</span>
-        <span style="color:#f4ede0;font-size:12px;font-weight:500;letter-spacing:-0.01em;">Sophie</span>
-      </a>
-      <span style="color:rgba(255,255,255,0.15);font-size:14px;margin:0 2px;">/</span>
-      <a href="/" id="_snLanding" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Landing</a>
-      <a href="/dashboard" id="_snDashboard" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Dashboard</a>
-      <a href="/crea" id="_snCrea" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.5);text-decoration:none;transition:all .15s;" onmouseover="this.style.color='rgba(255,255,255,0.85)'" onmouseout="if(!this.classList.contains('_sn-active'))this.style.color='rgba(255,255,255,0.5)'">Crea</a>
-    </div>
-  </div>
-</div>
-<script>
-(function(){
-  var p=location.pathname;
-  var id=p.startsWith('/dashboard')?'_snDashboard':p.startsWith('/crea')?'_snCrea':'_snLanding';
-  var el=document.getElementById(id);
-  if(el){el.style.color='#f4ede0';el.style.background='rgba(255,255,255,0.08)';el.classList.add('_sn-active');}
-})();
-</script>
-<style>body{padding-top:40px !important;}</style>
-<!-- /SOPHIE UNIFIED NAV -->
-{% raw %}
 <div class="layout">
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-logo">S</div>
-      Sophie
-      <nav class="tabs">
-        <a href="/dashboard">Acquisition</a>
-        <a href="/dashboard/flotte">Flotte</a>
-        <a href="/dashboard/emails">Emails</a>
-        <a href="/dashboard/tasks">Tâches</a>
-        <a href="/dashboard/strategies">Stratégies</a>
-        <a href="/dashboard/ads">Ads</a>
-        <a href="/dashboard/proxy" class="active">Proxy</a>
-        <a href="/dashboard/mails-va">Mails VA</a>
-        <a href="/dashboard/members">Membres</a>
-      </nav>
-    </div>
-    <button class="theme-toggle" id="themeToggle">
-      <svg id="iconSun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.4 1.4M11.55 11.55l1.4 1.4M3.05 12.95l1.4-1.4M11.55 4.45l1.4-1.4"/></svg>
-      <svg id="iconMoon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 9a5 5 0 01-6-6 5 5 0 106 6z"/></svg>
-    </button>
-  </div>
-
   <div class="header">
     <h1>Proxy</h1>
-    <div class="sub">Change l'IP de sortie du proxy en un clic.</div>
+    <div class="sub">Change l'IP de sortie de tes proxies en un clic.</div>
   </div>
-
-  <div class="proxy-card">
-    <div class="proxy-name" id="proxyName">—</div>
-    <div class="proxy-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg>
-    </div>
-    <div class="current-ip" id="currentIp" style="font-family:'Geist Mono',monospace;font-size:22px;font-weight:600;margin:12px 0 4px;color:var(--text);letter-spacing:-0.02em;">—</div>
-    <div style="font-size:12px;color:var(--text-3);margin-bottom:18px;">IP actuelle</div>
-    <button class="rotate-btn" id="rotateBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>
-      Changer l'IP
-    </button>
-    <div class="result" id="result"></div>
-    <div class="last-rotate" id="lastRotate"></div>
+  <div class="proxy-grid" id="proxyGrid">
+    <div style="text-align:center;padding:48px;color:var(--subtle);">Chargement...</div>
   </div>
 </div>
 
 <script>
-/* sb already initialised in <head> */
+let proxies = [];
 
-
-
-const THEME_KEY='sophie_theme';
-function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('iconSun').style.display=t==='dark'?'':'none';document.getElementById('iconMoon').style.display=t==='dark'?'none':'';}
-applyTheme(localStorage.getItem(THEME_KEY)||'light');
-document.getElementById('themeToggle').onclick=()=>{const c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';localStorage.setItem(THEME_KEY,c);applyTheme(c);};
-
-let proxy = null;
-function fmtTime(iso){ if(!iso) return ''; return new Date(iso).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
-
-async function load() {
-  const { data } = await sb.from('proxies').select('id,name,last_rotated_at,last_ip').order('position').limit(1);
-  proxy = data && data[0];
-  if (proxy) {
-    document.getElementById('proxyName').textContent = proxy.name;
-    if (proxy.last_ip) document.getElementById('currentIp').textContent = proxy.last_ip;
-    if (proxy.last_rotated_at) document.getElementById('lastRotate').textContent = 'Dernier changement: ' + fmtTime(proxy.last_rotated_at);
-  }
-  // Fetch live IP
-  try {
-    const r = await fetch('/api/proxy/ip');
-    const j = await r.json();
-    if (j.ip) document.getElementById('currentIp').textContent = j.ip;
-  } catch(e) {}
+function fmtTime(iso){
+  if(!iso) return '';
+  return new Date(iso).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 }
 
-document.getElementById('rotateBtn').onclick = async () => {
-  const btn = document.getElementById('rotateBtn');
-  const res = document.getElementById('result');
-  btn.disabled = true; btn.classList.add('spinning');
-  res.innerHTML = '<div class="badge" style="background:var(--accent-soft);color:var(--text-2)">Changement en cours…</div>';
+async function loadProxies(){
+  const r = await fetch('/api/proxy/list');
+  const j = await r.json();
+  proxies = j.proxies || [];
+  render();
+  // Load live IPs
+  proxies.forEach((p,i) => loadIp(p.id, i));
+}
+
+function render(){
+  const grid = document.getElementById('proxyGrid');
+  if(!proxies.length){
+    grid.innerHTML = '<div style="text-align:center;padding:48px;color:var(--subtle);">Aucun proxy configuré</div>';
+    return;
+  }
+  grid.innerHTML = proxies.map((p,i) => `
+    <div class="proxy-card" data-idx="${i}">
+      <div class="proxy-name">${p.name || 'Proxy ' + (i+1)}</div>
+      <div class="proxy-host">${p.proxy_host}:${p.proxy_port} · SOCKS5</div>
+      <div class="proxy-ip loading" id="ip-${i}">Chargement...</div>
+      <div class="ip-label">IP actuelle</div>
+      <button class="rotate-btn" id="btn-${i}" onclick="rotate(${i})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>
+        Changer l'IP
+      </button>
+      <div class="result" id="res-${i}"></div>
+      <div class="last-rotate" id="last-${i}">${p.last_rotated_at ? 'Dernier: ' + fmtTime(p.last_rotated_at) : ''}</div>
+    </div>
+  `).join('');
+}
+
+async function loadIp(proxyId, idx){
   try {
-    const r = await fetch('/api/proxy/rotate', { method:'POST' });
+    const r = await fetch('/api/proxy/ip?proxy_id=' + proxyId);
     const j = await r.json();
-    if (j.ok) {
-      document.getElementById('currentIp').textContent = j.ip || '—';
-      res.innerHTML = '<div class="badge ok"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3 3 7-7"/></svg>IP changée : ' + (j.ip || '') + '</div>';
-      document.getElementById('lastRotate').textContent = 'Dernier changement: à l\'instant';
+    const el = document.getElementById('ip-' + idx);
+    if(j.ip){
+      el.textContent = j.ip;
+      el.classList.remove('loading');
     } else {
-      res.innerHTML = '<div class="badge err">Échec: ' + (j.error || 'inconnu') + '</div>';
+      el.textContent = 'Indisponible';
     }
-  } catch(e) {
+  } catch(e){
+    document.getElementById('ip-' + idx).textContent = 'Erreur';
+  }
+}
+
+async function rotate(idx){
+  const p = proxies[idx];
+  const btn = document.getElementById('btn-' + idx);
+  const res = document.getElementById('res-' + idx);
+  const ipEl = document.getElementById('ip-' + idx);
+
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  res.innerHTML = '<div class="badge loading">Changement en cours…</div>';
+
+  try {
+    const r = await fetch('/api/proxy/rotate', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({proxy_id: p.id})
+    });
+    const j = await r.json();
+    if(j.ok){
+      ipEl.textContent = j.ip || '—';
+      ipEl.classList.remove('loading');
+      res.innerHTML = '<div class="badge ok"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3 3 7-7"/></svg> ' + (j.ip || 'OK') + '</div>';
+      document.getElementById('last-' + idx).textContent = 'Dernier: à l\'instant';
+      // Clear success after 5s
+      setTimeout(() => { res.innerHTML = ''; }, 5000);
+    } else {
+      res.innerHTML = '<div class="badge err">' + (j.error || 'Erreur') + '</div>';
+    }
+  } catch(e){
     res.innerHTML = '<div class="badge err">Erreur réseau</div>';
   }
-  setTimeout(()=>btn.classList.remove('spinning'), 600);
+  btn.classList.remove('spinning');
   btn.disabled = false;
-};
+}
 
-load();
+loadProxies();
 </script>
-<script src="/static/cs.js"></script>
 </body>
 </html>
 {% endraw %}

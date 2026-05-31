@@ -1283,18 +1283,39 @@ def api_clear():
 # Proxy rotation API
 # =============================================================================
 
+@app.route("/api/proxy/list")
+@require_auth
+def proxy_list():
+    """List all proxies."""
+    try:
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/proxies",
+            params={"select": "*", "order": "position"},
+            headers=_sb_headers(), timeout=5,
+        )
+        return jsonify(proxies=r.json() if r.status_code == 200 else [])
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
 @app.route("/api/proxy/rotate", methods=["POST"])
 @require_auth
 def proxy_rotate():
     """Rotate proxy IP and return the new IP."""
     try:
+        proxy_id = (request.json or {}).get("proxy_id") if request.is_json else request.args.get("proxy_id")
         # Fetch proxy info from Supabase
         headers = {"apikey": SUPABASE_ANON_KEY}
         key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
         headers["Authorization"] = f"Bearer {key}"
+        params = {"select": "*"}
+        if proxy_id:
+            params["id"] = f"eq.{proxy_id}"
+        else:
+            params["order"] = "position"
+            params["limit"] = "1"
         r = requests.get(
             f"{SUPABASE_URL}/rest/v1/proxies",
-            params={"select": "*", "order": "position", "limit": "1"},
+            params=params,
             headers=headers, timeout=5,
         )
         if r.status_code != 200 or not r.json():
@@ -1342,12 +1363,19 @@ def proxy_rotate():
 def proxy_ip():
     """Get current proxy IP."""
     try:
+        proxy_id = request.args.get("proxy_id")
         headers = {"apikey": SUPABASE_ANON_KEY}
         key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
         headers["Authorization"] = f"Bearer {key}"
+        params = {"select": "*"}
+        if proxy_id:
+            params["id"] = f"eq.{proxy_id}"
+        else:
+            params["order"] = "position"
+            params["limit"] = "1"
         r = requests.get(
             f"{SUPABASE_URL}/rest/v1/proxies",
-            params={"select": "*", "order": "position", "limit": "1"},
+            params=params,
             headers=headers, timeout=5,
         )
         if r.status_code != 200 or not r.json():
