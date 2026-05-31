@@ -2368,9 +2368,13 @@ function pollMusic() {
       }
       if (j.state === "done" || j.state === "error") {
         clearInterval(_musicPoll); _musicPoll = null;
-        $("#muStatusTitle").textContent = j.state === "done"
-          ? `✓ Terminé · ${j.done}/${j.total} vidéos`
-          : `Erreur · ${j.errors?.[0] || "voir logs"}`;
+        if (j.state === "done" && j.done === 0 && j.errors && j.errors.length) {
+          $("#muStatusTitle").textContent = `Erreur · ${j.errors[0]}`;
+        } else {
+          $("#muStatusTitle").textContent = j.state === "done"
+            ? `✓ Terminé · ${j.done}/${j.total} vidéos`
+            : `Erreur · ${j.errors?.[0] || "voir logs"}`;
+        }
         $("#muRun").disabled = false;
         if (j.files && j.files.length) {
           $("#muDlAll").style.display = "";
