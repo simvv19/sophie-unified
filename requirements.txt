@@ -5,3 +5,4 @@ requests
 pillow
 PyJWT
 pysocks
+imageio-ffmpeg
