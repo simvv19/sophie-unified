@@ -1280,6 +1280,102 @@ def api_clear():
 
 
 # =============================================================================
+# Follower stats auto-refresh
+# =============================================================================
+
+STATS_SECRET = os.environ.get("STATS_SECRET", "conquerorz-stats-2026")
+
+def _scrape_instagram(handle):
+    try:
+        r = requests.get(
+            f"https://www.instagram.com/api/v1/users/web_profile_info/?username={handle}",
+            headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+                     "x-ig-app-id": "936619743392459"},
+            timeout=10,
+        )
+        if r.status_code == 200:
+            return r.json()["data"]["user"]["edge_followed_by"]["count"]
+    except Exception:
+        pass
+    return None
+
+def _scrape_tiktok(handle):
+    import re
+    try:
+        r = requests.get(
+            f"https://www.tiktok.com/@{handle}",
+            headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15"},
+            timeout=10,
+        )
+        if r.status_code == 200:
+            m = re.search(r'"followerCount":(\d+)', r.text)
+            if m:
+                return int(m.group(1))
+    except Exception:
+        pass
+    return None
+
+@app.route("/api/stats/refresh", methods=["POST"])
+def stats_refresh():
+    """Scrape followers for all active accounts and save to acquisition table."""
+    # Auth via secret key (for cron) or logged-in admin
+    secret = request.args.get("secret") or (request.json or {}).get("secret")
+    if secret != STATS_SECRET:
+        user = get_current_user()
+        if not user or not user.get("is_admin"):
+            return jsonify(error="unauthorized"), 401
+
+    # Fetch active accounts
+    h = _sb_headers()
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/accounts",
+                     params={"status": "eq.actif", "select": "id,handle,platform"},
+                     headers=h, timeout=10)
+    accounts = r.json() if r.status_code == 200 else []
+
+    data = {}
+    for acc in accounts:
+        handle = acc.get("handle", "")
+        platform = acc.get("platform", "")
+        if not handle:
+            continue
+        if platform.lower() == "instagram":
+            count = _scrape_instagram(handle)
+            if count is not None:
+                data[f"insta_{handle}"] = count
+        elif platform.lower() == "tiktok":
+            count = _scrape_tiktok(handle)
+            if count is not None:
+                data[f"tiktok_{handle}"] = count
+        time.sleep(1)  # Rate limit
+
+    if not data:
+        return jsonify(ok=False, error="no data scraped"), 500
+
+    # Upsert into acquisition table
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    workspace_id = "00000000-0000-0000-0000-000000000001"
+
+    # Check if today's row exists
+    existing = requests.get(f"{SUPABASE_URL}/rest/v1/acquisition",
+                           params={"date": f"eq.{today}", "workspace_id": f"eq.{workspace_id}"},
+                           headers=h, timeout=10)
+    if existing.status_code == 200 and existing.json():
+        # Merge with existing data
+        old_data = existing.json()[0].get("data", {})
+        old_data.update(data)
+        requests.patch(f"{SUPABASE_URL}/rest/v1/acquisition",
+                      params={"date": f"eq.{today}", "workspace_id": f"eq.{workspace_id}"},
+                      json={"data": old_data, "updated_at": datetime.utcnow().isoformat()},
+                      headers={**h, "Prefer": "return=minimal"}, timeout=10)
+    else:
+        requests.post(f"{SUPABASE_URL}/rest/v1/acquisition",
+                     json={"date": today, "data": data, "workspace_id": workspace_id},
+                     headers={**h, "Prefer": "return=minimal"}, timeout=10)
+
+    return jsonify(ok=True, date=today, accounts=len(data), data=data)
+
+
+# =============================================================================
 # Proxy rotation API
 # =============================================================================
 
