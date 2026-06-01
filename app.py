@@ -1328,7 +1328,7 @@ def stats_refresh():
     # Fetch active accounts
     h = _sb_headers()
     r = requests.get(f"{SUPABASE_URL}/rest/v1/accounts",
-                     params={"status": "eq.actif", "select": "id,handle,platform"},
+                     params={"status": "eq.actif", "select": "id,handle,platform,tracking_key"},
                      headers=h, timeout=10)
     accounts = r.json() if r.status_code == 200 else []
 
@@ -1336,16 +1336,19 @@ def stats_refresh():
     for acc in accounts:
         handle = acc.get("handle", "")
         platform = acc.get("platform", "")
+        tracking_key = acc.get("tracking_key", "")
         if not handle:
             continue
         if platform.lower() == "instagram":
             count = _scrape_instagram(handle)
+            key = tracking_key or f"insta_{handle}"
             if count is not None:
-                data[f"insta_{handle}"] = count
+                data[key] = count
         elif platform.lower() == "tiktok":
             count = _scrape_tiktok(handle)
+            key = tracking_key or f"tiktok_{handle}"
             if count is not None:
-                data[f"tiktok_{handle}"] = count
+                data[key] = count
         time.sleep(1)  # Rate limit
 
     if not data:
@@ -1572,23 +1575,26 @@ def _run_stats_refresh():
     try:
         h = _sb_headers()
         r = requests.get(f"{SUPABASE_URL}/rest/v1/accounts",
-                         params={"status": "eq.actif", "select": "id,handle,platform"},
+                         params={"status": "eq.actif", "select": "id,handle,platform,tracking_key"},
                          headers=h, timeout=10)
         accounts = r.json() if r.status_code == 200 else []
         data = {}
         for acc in accounts:
             handle = acc.get("handle", "")
             platform = acc.get("platform", "")
+            tracking_key = acc.get("tracking_key", "")
             if not handle:
                 continue
             if platform.lower() == "instagram":
                 count = _scrape_instagram(handle)
+                key = tracking_key or f"insta_{handle}"
                 if count is not None:
-                    data[f"insta_{handle}"] = count
+                    data[key] = count
             elif platform.lower() == "tiktok":
                 count = _scrape_tiktok(handle)
+                key = tracking_key or f"tiktok_{handle}"
                 if count is not None:
-                    data[f"tiktok_{handle}"] = count
+                    data[key] = count
             time.sleep(1)
         if not data:
             print(f"[STATS] No data scraped")
