@@ -1562,6 +1562,79 @@ def va_accounts_delete(aid):
     return jsonify(error="Erreur suppression"), 500
 
 
+# =============================================================================
+# Background scheduler — refresh follower stats daily at 10:00 Paris time
+# =============================================================================
+
+def _run_stats_refresh():
+    """Call the stats refresh logic directly (no HTTP needed)."""
+    import re as _re
+    try:
+        h = _sb_headers()
+        r = requests.get(f"{SUPABASE_URL}/rest/v1/accounts",
+                         params={"status": "eq.actif", "select": "id,handle,platform"},
+                         headers=h, timeout=10)
+        accounts = r.json() if r.status_code == 200 else []
+        data = {}
+        for acc in accounts:
+            handle = acc.get("handle", "")
+            platform = acc.get("platform", "")
+            if not handle:
+                continue
+            if platform.lower() == "instagram":
+                count = _scrape_instagram(handle)
+                if count is not None:
+                    data[f"insta_{handle}"] = count
+            elif platform.lower() == "tiktok":
+                count = _scrape_tiktok(handle)
+                if count is not None:
+                    data[f"tiktok_{handle}"] = count
+            time.sleep(1)
+        if not data:
+            print(f"[STATS] No data scraped")
+            return
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        workspace_id = "00000000-0000-0000-0000-000000000001"
+        existing = requests.get(f"{SUPABASE_URL}/rest/v1/acquisition",
+                               params={"date": f"eq.{today}", "workspace_id": f"eq.{workspace_id}"},
+                               headers=h, timeout=10)
+        if existing.status_code == 200 and existing.json():
+            old_data = existing.json()[0].get("data", {})
+            old_data.update(data)
+            requests.patch(f"{SUPABASE_URL}/rest/v1/acquisition",
+                          params={"date": f"eq.{today}", "workspace_id": f"eq.{workspace_id}"},
+                          json={"data": old_data, "updated_at": datetime.utcnow().isoformat()},
+                          headers={**h, "Prefer": "return=minimal"}, timeout=10)
+        else:
+            requests.post(f"{SUPABASE_URL}/rest/v1/acquisition",
+                         json={"date": today, "data": data, "workspace_id": workspace_id},
+                         headers={**h, "Prefer": "return=minimal"}, timeout=10)
+        print(f"[STATS] Refreshed {len(data)} accounts for {today}")
+    except Exception as e:
+        print(f"[STATS] Error: {e}")
+
+
+def _scheduler_loop():
+    """Background thread: run stats refresh at 10:00 Paris time every day."""
+    import zoneinfo
+    tz = zoneinfo.ZoneInfo("Europe/Paris")
+    last_run_date = None
+    while True:
+        now = datetime.now(tz)
+        today = now.strftime("%Y-%m-%d")
+        if now.hour == 10 and now.minute < 5 and last_run_date != today:
+            last_run_date = today
+            print(f"[SCHEDULER] Starting daily stats refresh at {now.strftime('%H:%M')}")
+            _run_stats_refresh()
+        time.sleep(60)
+
+
+# Start scheduler in background thread
+_sched_thread = threading.Thread(target=_scheduler_loop, daemon=True)
+_sched_thread.start()
+print("[SCHEDULER] Daily stats refresh scheduled at 10:00 Europe/Paris")
+
+
 if __name__ == "__main__":
     print("Sophie Unified → http://localhost:5050")
     print("  /           → Landing page")
