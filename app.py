@@ -1285,13 +1285,29 @@ def api_clear():
 
 STATS_SECRET = os.environ.get("STATS_SECRET", "conquerorz-stats-2026")
 
+def _get_proxy():
+    """Fetch first proxy from Supabase for scraping."""
+    try:
+        h = _sb_headers()
+        r = requests.get(f"{SUPABASE_URL}/rest/v1/proxies",
+                         params={"select": "*", "order": "position", "limit": "1"},
+                         headers=h, timeout=5)
+        if r.status_code == 200 and r.json():
+            p = r.json()[0]
+            proxy_url = f"socks5://{p['proxy_user']}:{p['proxy_pass']}@{p['proxy_host']}:{p['proxy_port']}"
+            return {"http": proxy_url, "https": proxy_url}
+    except Exception:
+        pass
+    return None
+
 def _scrape_instagram(handle):
     try:
+        px = _get_proxy()
         r = requests.get(
             f"https://www.instagram.com/api/v1/users/web_profile_info/?username={handle}",
             headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
                      "x-ig-app-id": "936619743392459"},
-            timeout=10,
+            proxies=px, timeout=15,
         )
         if r.status_code == 200:
             return r.json()["data"]["user"]["edge_followed_by"]["count"]
