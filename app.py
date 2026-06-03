@@ -116,7 +116,7 @@ def get_current_user():
 
 def _load_permissions(email):
     """Fetch services + role from members table (cached in session for 5 min)."""
-    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","phantom","music"]
+    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","warmup","phantom","music"]
     if email == ADMIN_EMAIL:
         return {"services": ["landing", "dashboard", "crea"], "pages": ALL_PAGES, "is_admin": True, "name": "Admin"}
     cached = session.get("_perms")
