@@ -1718,10 +1718,25 @@ def warmup_assignments_create():
     plan_id = d.get("plan_id")
     if not account_name or not plan_id:
         return jsonify(error="Compte et plan requis"), 400
-    row = {"account_name": account_name, "plan_id": plan_id, "current_day": 1, "status": "active"}
+    start_day = int(d.get("current_day", 1))
+    row = {"account_name": account_name, "plan_id": plan_id, "current_day": start_day, "status": "active"}
     r = requests.post(f"{SUPABASE_URL}/rest/v1/warmup_assignments",
                       json=row, headers={**_sb_headers(), "Prefer": "return=representation"}, timeout=10)
     return jsonify(ok=True, assignment=r.json()[0] if r.status_code in (200, 201) and r.json() else {})
+
+@app.route("/api/warmup/assignments/<aid>", methods=["PATCH"])
+@require_auth
+def warmup_assignments_update(aid):
+    d = request.json or {}
+    patch = {}
+    if "current_day" in d: patch["current_day"] = int(d["current_day"])
+    if "status" in d: patch["status"] = d["status"]
+    if not patch:
+        return jsonify(error="nothing to update"), 400
+    requests.patch(f"{SUPABASE_URL}/rest/v1/warmup_assignments",
+                   params={"id": f"eq.{aid}"},
+                   json=patch, headers=_sb_headers(), timeout=10)
+    return jsonify(ok=True)
 
 @app.route("/api/warmup/assignments/<aid>", methods=["DELETE"])
 @require_auth

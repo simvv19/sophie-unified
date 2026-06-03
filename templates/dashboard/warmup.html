@@ -188,6 +188,7 @@
     <h3>Assigner un compte</h3>
     <div class="field"><label>Nom du compte</label><input id="amName" placeholder="@username" /></div>
     <div class="field"><label>Plan</label><select id="amPlan"></select></div>
+    <div class="field"><label>D&eacute;marrer au jour</label><input id="amDay" type="number" min="1" value="1" placeholder="1" /></div>
     <div id="assignMsg"></div>
     <div class="modal-footer">
       <button class="btn" onclick="closeAssignModal()">Fermer</button>
@@ -276,7 +277,11 @@ function renderAssignments(){
     return `<div class="assign-row">
       <span class="assign-name">${a.account_name}</span>
       <span class="assign-plan">${plan.name||'—'}</span>
-      <span class="assign-day">J${a.current_day > total ? total : a.current_day}/${total}</span>
+      <span class="assign-day" style="display:flex;align-items:center;gap:4px;">
+        J<input type="number" min="1" max="${total}" value="${a.current_day > total ? total : a.current_day}"
+          style="width:36px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;text-align:center;"
+          onchange="updateDay('${a.id}',this.value)"/>/${total}
+      </span>
       <span class="badge badge-${isDone?'done':'active'}">${isDone?'Terminé':'Actif'}</span>
       <button class="btn sm danger" onclick="deleteAssign('${a.id}')">✕</button>
     </div>`;
@@ -285,6 +290,7 @@ function renderAssignments(){
 
 document.getElementById('addAssignBtn').onclick = () => {
   document.getElementById('amName').value='';
+  document.getElementById('amDay').value='1';
   document.getElementById('amPlan').innerHTML = plans.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   document.getElementById('assignMsg').innerHTML='';
   document.getElementById('assignModal').classList.add('show');
@@ -295,15 +301,26 @@ document.getElementById('assignModal').onclick=e=>{if(e.target.id==='assignModal
 document.getElementById('saveAssignBtn').onclick = async () => {
   const name = document.getElementById('amName').value.trim();
   const plan_id = document.getElementById('amPlan').value;
+  const start_day = parseInt(document.getElementById('amDay').value) || 1;
   if(!name){ document.getElementById('assignMsg').innerHTML='<div class="msg err">Nom requis</div>'; return; }
   const r = await fetch('/api/warmup/assignments', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({account_name:name, plan_id})
+    body:JSON.stringify({account_name:name, plan_id, current_day:start_day})
   });
   const j = await r.json();
   if(j.ok){ closeAssignModal(); await loadAll(); }
   else document.getElementById('assignMsg').innerHTML=`<div class="msg err">${j.error}</div>`;
 };
+
+async function updateDay(id, day){
+  const d = parseInt(day);
+  if(!d || d < 1) return;
+  await fetch('/api/warmup/assignments/'+id, {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({current_day:d, status:'active'})
+  });
+  await loadAll();
+}
 
 async function deleteAssign(id){
   if(!confirm('Retirer ce compte du warm-up ?')) return;
