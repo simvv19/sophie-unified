@@ -1443,7 +1443,6 @@ def proxy_rotate():
 
         # Call rotation URL
         rot = requests.get(change_url, timeout=10)
-        import time as _t; _t.sleep(2)  # Wait for IP to change
 
         # Get new IP through the proxy
         new_ip = None
