@@ -1656,6 +1656,127 @@ _sched_thread.start()
 print("[SCHEDULER] Daily stats refresh scheduled at 10:00 Europe/Paris")
 
 
+# =============================================================================
+# Warm-up management API
+# =============================================================================
+
+@app.route("/api/warmup/plans")
+@require_auth
+def warmup_plans_list():
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/warmup_plans",
+                     params={"select": "*", "order": "created_at"},
+                     headers=_sb_headers(), timeout=10)
+    return jsonify(plans=r.json() if r.status_code == 200 else [])
+
+@app.route("/api/warmup/plans", methods=["POST"])
+@require_auth
+def warmup_plans_create():
+    d = request.json or {}
+    name = (d.get("name") or "").strip()
+    days = d.get("days", [])
+    if not name or not days:
+        return jsonify(error="Nom et jours requis"), 400
+    row = {"name": name, "total_days": len(days), "days": days}
+    r = requests.post(f"{SUPABASE_URL}/rest/v1/warmup_plans",
+                      json=row, headers={**_sb_headers(), "Prefer": "return=representation"}, timeout=10)
+    return jsonify(ok=True, plan=r.json()[0] if r.status_code in (200, 201) and r.json() else {})
+
+@app.route("/api/warmup/plans/<pid>", methods=["PATCH"])
+@require_auth
+def warmup_plans_update(pid):
+    d = request.json or {}
+    patch = {}
+    if "name" in d: patch["name"] = d["name"]
+    if "days" in d:
+        patch["days"] = d["days"]
+        patch["total_days"] = len(d["days"])
+    r = requests.patch(f"{SUPABASE_URL}/rest/v1/warmup_plans",
+                       params={"id": f"eq.{pid}"},
+                       json=patch, headers=_sb_headers(), timeout=10)
+    return jsonify(ok=True)
+
+@app.route("/api/warmup/plans/<pid>", methods=["DELETE"])
+@require_auth
+def warmup_plans_delete(pid):
+    requests.delete(f"{SUPABASE_URL}/rest/v1/warmup_plans",
+                    params={"id": f"eq.{pid}"}, headers=_sb_headers(), timeout=10)
+    return jsonify(ok=True)
+
+@app.route("/api/warmup/assignments")
+@require_auth
+def warmup_assignments_list():
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/warmup_assignments",
+                     params={"select": "*,warmup_plans(name,total_days,days)", "order": "created_at"},
+                     headers=_sb_headers(), timeout=10)
+    return jsonify(assignments=r.json() if r.status_code == 200 else [])
+
+@app.route("/api/warmup/assignments", methods=["POST"])
+@require_auth
+def warmup_assignments_create():
+    d = request.json or {}
+    account_name = (d.get("account_name") or "").strip()
+    plan_id = d.get("plan_id")
+    if not account_name or not plan_id:
+        return jsonify(error="Compte et plan requis"), 400
+    row = {"account_name": account_name, "plan_id": plan_id, "current_day": 1, "status": "active"}
+    r = requests.post(f"{SUPABASE_URL}/rest/v1/warmup_assignments",
+                      json=row, headers={**_sb_headers(), "Prefer": "return=representation"}, timeout=10)
+    return jsonify(ok=True, assignment=r.json()[0] if r.status_code in (200, 201) and r.json() else {})
+
+@app.route("/api/warmup/assignments/<aid>", methods=["DELETE"])
+@require_auth
+def warmup_assignments_delete(aid):
+    requests.delete(f"{SUPABASE_URL}/rest/v1/warmup_assignments",
+                    params={"id": f"eq.{aid}"}, headers=_sb_headers(), timeout=10)
+    return jsonify(ok=True)
+
+@app.route("/api/warmup/complete", methods=["POST"])
+@require_auth
+def warmup_complete_day():
+    d = request.json or {}
+    assignment_id = d.get("assignment_id")
+    if not assignment_id:
+        return jsonify(error="assignment_id requis"), 400
+    h = _sb_headers()
+    # Get assignment
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/warmup_assignments",
+                     params={"id": f"eq.{assignment_id}", "select": "*,warmup_plans(total_days)"},
+                     headers=h, timeout=10)
+    if not r.json():
+        return jsonify(error="Assignment non trouvé"), 404
+    assignment = r.json()[0]
+    day = assignment["current_day"]
+    total = assignment.get("warmup_plans", {}).get("total_days", 99)
+    # Log completion
+    user = get_current_user()
+    completed_by = user.get("email", "") if user else ""
+    requests.post(f"{SUPABASE_URL}/rest/v1/warmup_logs",
+                  json={"assignment_id": assignment_id, "day_number": day, "completed_by": completed_by},
+                  headers={**h, "Prefer": "return=minimal"}, timeout=10)
+    # Advance day or mark done
+    new_day = day + 1
+    update = {"current_day": new_day, "last_completed_at": datetime.utcnow().isoformat()}
+    if new_day > total:
+        update["status"] = "done"
+    requests.patch(f"{SUPABASE_URL}/rest/v1/warmup_assignments",
+                   params={"id": f"eq.{assignment_id}"},
+                   json=update, headers=h, timeout=10)
+    return jsonify(ok=True, new_day=new_day, done=new_day > total)
+
+
+# =============================================================================
+# Warm-up page
+# =============================================================================
+
+@app.route("/dashboard/warmup")
+@require_auth
+@require_service("dashboard")
+def dashboard_warmup():
+    return render_template("dashboard/warmup.html",
+                           supabase_url=SUPABASE_URL,
+                           supabase_key=SUPABASE_ANON_KEY)
+
+
 if __name__ == "__main__":
     print("Sophie Unified → http://localhost:5050")
     print("  /           → Landing page")

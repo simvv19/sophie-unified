@@ -1,0 +1,405 @@
+{% raw %}<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<link rel="icon" type="image/svg+xml" href="/static/assets/logo-conquerorz.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ConquerorZ · Warm-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#FAFAF9; --card:#FFFFFF; --border:#E8E6E1; --border-strong:#D4D1CB;
+    --ink:#16150F; --muted:#615F58; --subtle:#94908A; --muted-bg:#F4F3F1;
+    --accent:#3B9DF7; --accent-deep:#1F7BD6; --accent-soft:#E4F1FE;
+    --red:#E5484D; --red-bg:#FFF0F0;
+    --green:#15803d; --green-bg:#ecfdf5;
+    --orange:#b45309; --orange-bg:#fffbeb;
+    --radius:10px;
+    --shadow-lg:0 12px 32px rgba(0,0,0,0.10);
+  }
+  * { box-sizing:border-box; margin:0; }
+  html,body { background:var(--bg); }
+  body { font-family:'Schibsted Grotesk',system-ui,sans-serif; color:var(--ink); font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .layout { max-width:960px; margin:0 auto; padding:32px 28px 64px; }
+
+  /* Tabs */
+  .tabs { display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:0; }
+  .tab { padding:10px 16px; font-size:13px; font-weight:600; color:var(--subtle); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; background:none; border-top:0; border-left:0; border-right:0; font-family:inherit; }
+  .tab:hover { color:var(--ink); }
+  .tab.active { color:var(--accent-deep); border-bottom-color:var(--accent); }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  .header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; gap:16px; }
+  .header h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; }
+  .header .sub { color:var(--subtle); font-size:13px; }
+  .btn { font-family:inherit; font-size:12px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--ink); cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
+  .btn:hover { border-color:var(--border-strong); background:var(--muted-bg); }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.primary:hover { background:var(--accent-deep); }
+  .btn.danger { color:var(--red); }
+  .btn.danger:hover { background:var(--red-bg); }
+  .btn.sm { padding:6px 10px; font-size:11px; }
+  .btn svg { width:14px; height:14px; }
+
+  /* Today's checklist */
+  .checklist { display:grid; gap:16px; }
+  .check-card {
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 24px;
+    display:flex; gap:16px; align-items:flex-start; transition:all .2s;
+  }
+  .check-card.completed { opacity:0.5; border-color:var(--green); }
+  .check-card .check-btn {
+    width:28px; height:28px; border-radius:50%; border:2px solid var(--border-strong);
+    background:none; cursor:pointer; flex:none; display:grid; place-items:center; transition:all .15s;
+    margin-top:2px;
+  }
+  .check-card .check-btn:hover { border-color:var(--green); background:var(--green-bg); }
+  .check-card.completed .check-btn { border-color:var(--green); background:var(--green); }
+  .check-card.completed .check-btn::after { content:'✓'; color:#fff; font-size:14px; font-weight:700; }
+  .check-info { flex:1; min-width:0; }
+  .check-account { font-size:15px; font-weight:700; margin-bottom:2px; }
+  .check-day { font-size:12px; color:var(--accent-deep); font-weight:600; margin-bottom:6px; }
+  .check-instructions { font-size:13px; color:var(--muted); line-height:1.6; }
+  .check-progress { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .check-progress .track { flex:1; height:4px; background:var(--muted-bg); border-radius:2px; max-width:120px; }
+  .check-progress .fill { height:100%; border-radius:2px; background:var(--accent); }
+  .check-progress .lbl { font-size:11px; color:var(--subtle); font-weight:600; }
+
+  .empty { text-align:center; padding:48px; color:var(--subtle); font-size:14px; }
+
+  /* Plans */
+  .plans-grid { display:grid; gap:12px; }
+  .plan-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .plan-card h3 { font-size:16px; font-weight:700; margin-bottom:4px; }
+  .plan-meta { font-size:12px; color:var(--subtle); margin-bottom:12px; }
+  .plan-days { display:flex; flex-direction:column; gap:6px; }
+  .plan-day { font-size:12px; color:var(--muted); padding:6px 10px; background:var(--muted-bg); border-radius:6px; }
+  .plan-day b { color:var(--ink); }
+  .plan-actions { display:flex; gap:6px; margin-top:12px; }
+
+  /* Assignments */
+  .assign-grid { display:grid; gap:10px; }
+  .assign-row {
+    background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 18px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .assign-name { font-weight:600; flex:1; }
+  .assign-plan { font-size:12px; color:var(--accent-deep); font-weight:600; }
+  .assign-day { font-size:12px; color:var(--subtle); }
+  .badge { display:inline-flex; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; text-transform:uppercase; }
+  .badge-active { background:var(--orange-bg); color:var(--orange); }
+  .badge-done { background:var(--green-bg); color:var(--green); }
+
+  /* Modal */
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.45); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:200; }
+  .modal-bg.show { display:flex; }
+  .modal { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:28px; width:100%; max-width:540px; box-shadow:var(--shadow-lg); max-height:90vh; overflow-y:auto; }
+  .modal h3 { margin:0 0 16px; font-size:18px; font-weight:700; }
+  .field { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; min-width:0; }
+  .field label { font-size:11px; font-weight:700; color:var(--subtle); text-transform:uppercase; letter-spacing:0.04em; }
+  .field input, .field select, .field textarea { font-family:inherit; font-size:13px; padding:9px 12px; width:100%; box-sizing:border-box; border-radius:8px; border:1px solid var(--border-strong); background:var(--bg); color:var(--ink); outline:none; }
+  .field textarea { min-height:60px; resize:vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,157,247,0.15); }
+  .day-editor { display:flex; flex-direction:column; gap:8px; }
+  .day-row { display:flex; gap:8px; align-items:flex-start; }
+  .day-row .day-num { font-size:12px; font-weight:700; color:var(--accent-deep); min-width:28px; padding-top:10px; }
+  .day-row textarea { flex:1; }
+  .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+  .msg { font-size:12px; padding:8px 12px; border-radius:8px; margin-top:12px; font-weight:500; }
+  .msg.ok { background:var(--green-bg); color:var(--green); }
+  .msg.err { background:var(--red-bg); color:var(--red); }
+
+  .late-tag { font-size:10px; padding:2px 6px; border-radius:4px; background:var(--red-bg); color:var(--red); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="header">
+    <div>
+      <h1>Warm-up</h1>
+      <div class="sub">G&egrave;re le warm-up de tes comptes Instagram.</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="today">Aujourd'hui</button>
+    <button class="tab" data-tab="accounts">Comptes</button>
+    <button class="tab" data-tab="plans">Plans</button>
+  </div>
+
+  <!-- TAB: Aujourd'hui -->
+  <div class="tab-content active" id="tab-today">
+    <div class="checklist" id="checklist"></div>
+    <div class="empty" id="emptyToday" style="display:none;">Aucun warm-up en cours aujourd'hui 🎉</div>
+  </div>
+
+  <!-- TAB: Comptes -->
+  <div class="tab-content" id="tab-accounts">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+      <button class="btn primary" id="addAssignBtn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        Assigner un compte
+      </button>
+    </div>
+    <div class="assign-grid" id="assignGrid"></div>
+    <div class="empty" id="emptyAssign" style="display:none;">Aucun compte assign&eacute;</div>
+  </div>
+
+  <!-- TAB: Plans -->
+  <div class="tab-content" id="tab-plans">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+      <button class="btn primary" id="addPlanBtn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        Nouveau plan
+      </button>
+    </div>
+    <div class="plans-grid" id="plansGrid"></div>
+  </div>
+</div>
+
+<!-- Modal Plan -->
+<div class="modal-bg" id="planModal">
+  <div class="modal">
+    <h3 id="planModalTitle">Nouveau plan</h3>
+    <input type="hidden" id="pmId" />
+    <div class="field"><label>Nom du plan</label><input id="pmName" placeholder="Plan A — 7 jours" /></div>
+    <div class="field">
+      <label>Nombre de jours</label>
+      <input id="pmDays" type="number" min="1" max="30" value="7" />
+    </div>
+    <div class="field">
+      <label>Instructions par jour</label>
+      <div class="day-editor" id="dayEditor"></div>
+    </div>
+    <div id="planMsg"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closePlanModal()">Fermer</button>
+      <button class="btn primary" id="savePlanBtn">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Assign -->
+<div class="modal-bg" id="assignModal">
+  <div class="modal">
+    <h3>Assigner un compte</h3>
+    <div class="field"><label>Nom du compte</label><input id="amName" placeholder="@username" /></div>
+    <div class="field"><label>Plan</label><select id="amPlan"></select></div>
+    <div id="assignMsg"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeAssignModal()">Fermer</button>
+      <button class="btn primary" id="saveAssignBtn">Assigner</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let plans=[], assignments=[];
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+});
+
+async function loadAll(){
+  const [p,a] = await Promise.all([
+    fetch('/api/warmup/plans').then(r=>r.json()),
+    fetch('/api/warmup/assignments').then(r=>r.json()),
+  ]);
+  plans = p.plans||[];
+  assignments = a.assignments||[];
+  renderToday();
+  renderAssignments();
+  renderPlans();
+}
+
+// ===== TODAY =====
+function renderToday(){
+  const active = assignments.filter(a=>a.status==='active');
+  const el = document.getElementById('checklist');
+  const empty = document.getElementById('emptyToday');
+  if(!active.length){ el.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  el.innerHTML = active.map(a => {
+    const plan = a.warmup_plans || {};
+    const days = plan.days || [];
+    const dayInfo = days.find(d=>d.day===a.current_day) || {};
+    const total = plan.total_days || days.length;
+    const pct = Math.round(((a.current_day-1)/total)*100);
+    const lastDone = a.last_completed_at ? new Date(a.last_completed_at) : null;
+    const today = new Date().toDateString();
+    const doneToday = lastDone && lastDone.toDateString() === today;
+    const isLate = lastDone && !doneToday && (Date.now() - lastDone.getTime()) > 48*3600*1000;
+
+    return `<div class="check-card ${doneToday?'completed':''}" data-id="${a.id}">
+      <button class="check-btn" onclick="completeDay('${a.id}')" ${doneToday?'disabled':''}></button>
+      <div class="check-info">
+        <div class="check-account">${a.account_name} ${isLate?'<span class="late-tag">En retard</span>':''}</div>
+        <div class="check-day">Jour ${a.current_day}/${total} · ${plan.name||'Plan'}</div>
+        <div class="check-instructions">${dayInfo.instructions||'Pas d\'instructions pour ce jour.'}</div>
+        <div class="check-progress">
+          <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+          <span class="lbl">${pct}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function completeDay(assignmentId){
+  const r = await fetch('/api/warmup/complete', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({assignment_id:assignmentId})
+  });
+  const j = await r.json();
+  if(j.ok) await loadAll();
+}
+
+// ===== ASSIGNMENTS =====
+function renderAssignments(){
+  const el = document.getElementById('assignGrid');
+  const empty = document.getElementById('emptyAssign');
+  if(!assignments.length){ el.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  el.innerHTML = assignments.map(a => {
+    const plan = a.warmup_plans || {};
+    const total = plan.total_days || 0;
+    const isDone = a.status === 'done';
+    return `<div class="assign-row">
+      <span class="assign-name">${a.account_name}</span>
+      <span class="assign-plan">${plan.name||'—'}</span>
+      <span class="assign-day">J${a.current_day > total ? total : a.current_day}/${total}</span>
+      <span class="badge badge-${isDone?'done':'active'}">${isDone?'Terminé':'Actif'}</span>
+      <button class="btn sm danger" onclick="deleteAssign('${a.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('addAssignBtn').onclick = () => {
+  document.getElementById('amName').value='';
+  document.getElementById('amPlan').innerHTML = plans.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('assignMsg').innerHTML='';
+  document.getElementById('assignModal').classList.add('show');
+};
+function closeAssignModal(){ document.getElementById('assignModal').classList.remove('show'); }
+document.getElementById('assignModal').onclick=e=>{if(e.target.id==='assignModal')closeAssignModal();};
+
+document.getElementById('saveAssignBtn').onclick = async () => {
+  const name = document.getElementById('amName').value.trim();
+  const plan_id = document.getElementById('amPlan').value;
+  if(!name){ document.getElementById('assignMsg').innerHTML='<div class="msg err">Nom requis</div>'; return; }
+  const r = await fetch('/api/warmup/assignments', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({account_name:name, plan_id})
+  });
+  const j = await r.json();
+  if(j.ok){ closeAssignModal(); await loadAll(); }
+  else document.getElementById('assignMsg').innerHTML=`<div class="msg err">${j.error}</div>`;
+};
+
+async function deleteAssign(id){
+  if(!confirm('Retirer ce compte du warm-up ?')) return;
+  await fetch('/api/warmup/assignments/'+id, {method:'DELETE'});
+  await loadAll();
+}
+
+// ===== PLANS =====
+function renderPlans(){
+  const el = document.getElementById('plansGrid');
+  el.innerHTML = plans.map(p => {
+    const days = p.days || [];
+    return `<div class="plan-card">
+      <h3>${p.name}</h3>
+      <div class="plan-meta">${p.total_days} jours</div>
+      <div class="plan-days">
+        ${days.map(d=>`<div class="plan-day"><b>J${d.day}</b> — ${d.instructions}</div>`).join('')}
+      </div>
+      <div class="plan-actions">
+        <button class="btn sm" onclick="editPlan('${p.id}')">Modifier</button>
+        <button class="btn sm danger" onclick="deletePlan('${p.id}')">Supprimer</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let _editingPlanId = null;
+document.getElementById('addPlanBtn').onclick = () => openPlanModal(null);
+
+function openPlanModal(id){
+  _editingPlanId = id;
+  const p = id ? plans.find(x=>x.id===id) : null;
+  document.getElementById('planModalTitle').textContent = p ? 'Modifier le plan' : 'Nouveau plan';
+  document.getElementById('pmName').value = p?.name || '';
+  document.getElementById('pmDays').value = p?.total_days || 7;
+  buildDayEditor(p?.days || []);
+  document.getElementById('planMsg').innerHTML = '';
+  document.getElementById('planModal').classList.add('show');
+}
+function closePlanModal(){ document.getElementById('planModal').classList.remove('show'); }
+document.getElementById('planModal').onclick=e=>{if(e.target.id==='planModal')closePlanModal();};
+
+document.getElementById('pmDays').oninput = () => {
+  const n = parseInt(document.getElementById('pmDays').value) || 1;
+  const existing = collectDays();
+  while(existing.length < n) existing.push({day:existing.length+1, instructions:''});
+  buildDayEditor(existing.slice(0,n));
+};
+
+function buildDayEditor(days){
+  const n = parseInt(document.getElementById('pmDays').value) || days.length || 7;
+  const editor = document.getElementById('dayEditor');
+  const arr = [];
+  for(let i=0;i<n;i++){
+    const d = days[i] || {};
+    arr.push(`<div class="day-row"><span class="day-num">J${i+1}</span><textarea data-day="${i+1}" placeholder="Instructions du jour ${i+1}...">${d.instructions||''}</textarea></div>`);
+  }
+  editor.innerHTML = arr.join('');
+}
+
+function collectDays(){
+  return Array.from(document.querySelectorAll('#dayEditor textarea')).map(ta => ({
+    day: parseInt(ta.dataset.day),
+    instructions: ta.value.trim()
+  }));
+}
+
+document.getElementById('savePlanBtn').onclick = async () => {
+  const name = document.getElementById('pmName').value.trim();
+  const days = collectDays();
+  if(!name){ document.getElementById('planMsg').innerHTML='<div class="msg err">Nom requis</div>'; return; }
+  if(days.some(d=>!d.instructions)){ document.getElementById('planMsg').innerHTML='<div class="msg err">Remplis toutes les instructions</div>'; return; }
+
+  const body = {name, days};
+  let r;
+  if(_editingPlanId){
+    r = await fetch('/api/warmup/plans/'+_editingPlanId, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  } else {
+    r = await fetch('/api/warmup/plans', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  }
+  const j = await r.json();
+  if(j.ok){ closePlanModal(); await loadAll(); }
+  else document.getElementById('planMsg').innerHTML=`<div class="msg err">${j.error||'Erreur'}</div>`;
+};
+
+function editPlan(id){ openPlanModal(id); }
+async function deletePlan(id){
+  if(!confirm('Supprimer ce plan ?')) return;
+  await fetch('/api/warmup/plans/'+id, {method:'DELETE'});
+  await loadAll();
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePlanModal();closeAssignModal();}});
+
+loadAll();
+</script>
+</body>
+</html>
+{% endraw %}
