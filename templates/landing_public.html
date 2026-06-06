@@ -23,9 +23,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;600;700&family=Major+Mono+Display&display=swap" rel="stylesheet">
-<script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  window.__supabase = createClient(
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  window.__supabase = window.supabase.createClient(
     "https://sfaxubipmidysfvtfvdx.supabase.co",
     "sb_publishable_lRUeA0F7gERIq5SdUcLEWA_p5czx1uv",
     { auth: { persistSession: true, autoRefreshToken: true } }
@@ -847,8 +847,7 @@
 <body>
 <div id="app"></div>
 
-<script type="module">
-await new Promise(r => window.__supabase ? r() : window.addEventListener("supabase-ready", r, { once: true }));
+<script>
 const sb = window.__supabase;
 const app = document.getElementById("app");
 
