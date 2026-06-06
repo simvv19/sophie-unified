@@ -1804,8 +1804,9 @@ def landing_domain_router():
     host = request.host.split(":")[0].lower()
     if host not in LANDING_DOMAINS:
         return None  # normal conquerorz.co flow
-    # Serve public landing template for all paths
-    return render_template("landing_public.html")
+    # Serve as raw HTML (not Jinja2) to avoid template parsing issues
+    html_path = ROOT / "templates" / "landing_public.html"
+    return send_file(html_path, mimetype="text/html")
 
 
 if __name__ == "__main__":
