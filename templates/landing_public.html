@@ -861,7 +861,28 @@ async function route() {
   const seg = pathSegment();
   // Root and /admin both lead to the admin (login or dashboard)
   if (seg === "" || seg === "index.html" || seg === "admin") return showAdmin();
+  // /go/<slug> — redirect to the page's main link
+  if (seg.startsWith("go/")) {
+    const goSlug = seg.replace("go/", "");
+    return handleGo(goSlug);
+  }
   return showLanding(seg);
+}
+
+async function handleGo(slug) {
+  const { data } = await sb.from("landing_pages").select("id,data").eq("slug", slug).maybeSingle();
+  if (!data) { window.location.href = "/" + slug; return; }
+  // Find the first enabled link for this page
+  const { data: links } = await sb.from("page_links")
+    .select("url").eq("page_id", data.id).eq("enabled", true)
+    .order("position", { ascending: true }).limit(1);
+  if (links && links.length && links[0].url) {
+    // Record visit then redirect
+    try { await sb.from("visits").insert({ page_id: data.id, referrer: document.referrer || null, ua: navigator.userAgent }); } catch(e) {}
+    window.location.href = links[0].url;
+  } else {
+    window.location.href = "/" + slug;
+  }
 }
 window.addEventListener("popstate", route);
 
