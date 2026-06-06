@@ -1792,6 +1792,22 @@ def dashboard_warmup():
                            supabase_key=SUPABASE_ANON_KEY)
 
 
+# =============================================================================
+# Public landing pages (sophiemercier.fr)
+# =============================================================================
+
+LANDING_DOMAINS = {"sophiemercier.fr", "www.sophiemercier.fr"}
+
+@app.before_request
+def landing_domain_router():
+    """Serve public landing pages when request comes from sophiemercier.fr."""
+    host = request.host.split(":")[0].lower()
+    if host not in LANDING_DOMAINS:
+        return None  # normal conquerorz.co flow
+    # Serve public landing template for all paths
+    return render_template("landing_public.html")
+
+
 if __name__ == "__main__":
     print("Sophie Unified → http://localhost:5050")
     print("  /           → Landing page")
