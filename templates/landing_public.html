@@ -904,8 +904,8 @@ async function showLanding(slug) {
   const s = { ...data.data, photo: photoUrl, slug: data.slug, _origin: window.location.origin, _links: pageLinks };
   const env = detectEnv();
 
-  // 18+ overlay (all visitors when enabled)
-  if (s.tiktok_overlay) {
+  // 18+ overlay (in-app browsers only: TikTok, Snapchat, Instagram, Facebook, Messenger)
+  if (s.tiktok_overlay && env.isInApp) {
     renderTikTokOverlay(app, s, env);
     document.title = s.title || data.slug;
     return;
