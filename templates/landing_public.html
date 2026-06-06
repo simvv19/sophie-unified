@@ -872,14 +872,14 @@ async function route() {
 async function handleGo(slug) {
   const { data } = await sb.from("landing_pages").select("id,data").eq("slug", slug).maybeSingle();
   if (!data) { window.location.href = "/" + slug; return; }
-  // Find the first enabled link for this page
+  // Try page_links first, then fallback to data.url
   const { data: links } = await sb.from("page_links")
     .select("url").eq("page_id", data.id).eq("enabled", true)
     .order("position", { ascending: true }).limit(1);
-  if (links && links.length && links[0].url) {
-    // Record visit then redirect
+  const targetUrl = (links && links.length && links[0].url) ? links[0].url : (data.data && data.data.url);
+  if (targetUrl) {
     try { await sb.from("visits").insert({ page_id: data.id, referrer: document.referrer || null, ua: navigator.userAgent }); } catch(e) {}
-    window.location.href = links[0].url;
+    window.location.href = targetUrl;
   } else {
     window.location.href = "/" + slug;
   }
