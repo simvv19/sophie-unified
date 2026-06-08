@@ -333,7 +333,7 @@ function NewPageModal({onClose,onCreated}){
     setSaving(true);setErr('');
     const {data,error}=await sb.from('landing_pages').insert({owner_id:'7c00387c-d55f-4952-a14c-5d8d14029e5c',slug:slug.trim(),data:{name:name.trim()||slug.trim(),title:name.trim()||slug.trim(),url:url.trim()||null}}).select().single();
     if(error){setErr(error.message);setSaving(false);return}
-    onCreated(data);onClose();
+    window.location.href='/landing/edit#page='+data.id;
   }
   return(
     <div style={{position:'fixed',inset:0,zIndex:100,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
@@ -428,14 +428,14 @@ function LinksOverview({period,setPeriod,onOpen}){
           </tr></thead>
           <tbody>
             {rows.map(r=>(
-              <tr key={r.page.id} onClick={()=>onOpen(r.page)} className="cz-row" style={{borderTop:'1px solid var(--border-subtle)',cursor:'pointer'}}>
+              <tr key={r.page.id} className="cz-row" style={{borderTop:'1px solid var(--border-subtle)'}}>
                 <td style={{padding:'13px 20px'}}><div style={{fontWeight:600,marginBottom:3}}>{r.page.data?.title||r.page.slug}</div><div style={{fontSize:12,color:'var(--fg-subtle)',fontFamily:'var(--font-mono)'}}>/{r.page.slug}</div></td>
                 <td style={{padding:'13px 20px'}}><Sparkline series={r.series}/></td>
                 <td style={{padding:'13px 20px',textAlign:'right'}}><span style={{fontWeight:600,fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums',fontSize:14}}>{fmt(r.clicks)}</span></td>
                 <td style={{padding:'13px 20px',textAlign:'right',fontFamily:'var(--font-mono)',color:'var(--fg-muted)'}}>{fmt(r.views)}</td>
                 <td style={{padding:'13px 20px',textAlign:'right',fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums'}}>{(Math.round(r.rate*1000)/10).toString().replace('.',',')}{' '}%</td>
                 <td style={{padding:'13px 20px'}}>{r.topCountry?<span style={{color:'var(--fg-muted)'}}>{r.topCountry.key}</span>:<span style={{color:'var(--fg-subtle)'}}>—</span>}</td>
-                <td style={{padding:'13px 20px',textAlign:'right'}}><i data-lucide="chevron-right" style={{width:16,height:16,color:'var(--fg-subtle)'}}></i></td>
+                <td style={{padding:'13px 20px',textAlign:'right'}}><div style={{display:'flex',gap:6,justifyContent:'flex-end'}}><button onClick={()=>window.location.href='/landing/edit#page='+r.page.id} title="Éditer" style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="pencil" style={{width:14,height:14}}></i></button><button onClick={()=>onOpen(r.page)} title="Stats" style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="bar-chart-2" style={{width:14,height:14}}></i></button></div></td>
               </tr>
             ))}
             {rows.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'var(--fg-subtle)'}}>Aucune donnee pour cette periode</td></tr>}

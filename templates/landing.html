@@ -1897,6 +1897,9 @@ async function showAdmin() {
   if ((location.hash||"").indexOf("domains") > -1) currentSection = "domains";
   await Promise.all([loadFolders(), loadPages(), loadDomains()]);
   renderAdmin();
+  // Auto-open page drawer if #page=ID in hash
+  const hm = (location.hash||"").match(/page=([a-f0-9-]+)/i);
+  if (hm && hm[1]) { setTimeout(() => openPageDrawer(hm[1]), 200); }
 }
 
 async function loadDomains() {
