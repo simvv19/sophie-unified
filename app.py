@@ -1453,31 +1453,42 @@ def proxy_rotate():
         # Call rotation URL
         rot = requests.get(change_url, timeout=10)
 
-        # Get new IP through the proxy
+        # Get new IP through the proxy. Mobile dongles reconnect after a
+        # rotation (~15-35s), so retry a few times instead of a single shot.
         new_ip = None
         host = proxy.get("proxy_host")
         port = proxy.get("proxy_port")
         user = proxy.get("proxy_user")
         pwd = proxy.get("proxy_pass")
         if host and port:
-            try:
-                proxies = {"https": f"socks5://{user}:{pwd}@{host}:{port}",
-                           "http": f"socks5://{user}:{pwd}@{host}:{port}"}
-                ip_r = requests.get("https://api.ipify.org", proxies=proxies, timeout=10)
-                new_ip = ip_r.text.strip()
-            except Exception:
-                pass
+            proxies = {"https": f"socks5://{user}:{pwd}@{host}:{port}",
+                       "http": f"socks5://{user}:{pwd}@{host}:{port}"}
+            for attempt in range(6):  # up to ~36s total
+                try:
+                    ip_r = requests.get("https://api.ipify.org", proxies=proxies, timeout=10)
+                    candidate = ip_r.text.strip()
+                    if candidate:
+                        new_ip = candidate
+                        break
+                except Exception:
+                    pass
+                time.sleep(6)
 
-        # Update last_rotated_at and last_ip in Supabase
+        # Update Supabase. Never overwrite a known IP with None (e.g. if the
+        # dongle is still reconnecting) — keep the previous value in that case.
+        patch_body = {"last_rotated_at": "now()"}
+        if new_ip:
+            patch_body["last_ip"] = new_ip
         requests.patch(
             f"{SUPABASE_URL}/rest/v1/proxies",
             params={"id": f"eq.{proxy['id']}"},
-            json={"last_rotated_at": "now()", "last_ip": new_ip},
+            json=patch_body,
             headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"},
             timeout=5,
         )
 
-        return jsonify(ok=True, ip=new_ip)
+        # ip=None tells the frontend "rotation done, IP still reconnecting"
+        return jsonify(ok=True, ip=new_ip, reconnecting=(new_ip is None))
     except Exception as e:
         return jsonify(error=str(e)), 500
 
