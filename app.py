@@ -116,7 +116,7 @@ def get_current_user():
 
 def _load_permissions(email):
     """Fetch services + role from members table (cached in session for 5 min)."""
-    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","warmup","phantom","music","liens"]
+    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","warmup","phantom","music"]
     if email == ADMIN_EMAIL:
         return {"services": ["landing", "dashboard", "crea"], "pages": ALL_PAGES, "is_admin": True, "name": "Admin"}
     cached = session.get("_perms")
@@ -370,6 +370,12 @@ def centrale():
 @require_auth
 @require_service("landing")
 def landing():
+    return send_file(ROOT / "templates" / "dashboard" / "liens.html", mimetype="text/html")
+
+@app.route("/landing/edit")
+@require_auth
+@require_service("landing")
+def landing_edit():
     return render_template("landing.html")
 
 
@@ -388,7 +394,6 @@ DASHBOARD_PAGES = {
     "proxy": "dashboard/proxy.html",
     "mails-va": "dashboard/mails-va.html",
     "members": "dashboard/members.html",
-    "liens": "dashboard/liens.html",
 }
 
 @app.route("/dashboard")

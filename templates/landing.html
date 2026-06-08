@@ -1960,6 +1960,10 @@ function renderAdmin() {
           ${icon("home", 18)}
           Mes pages
         </div>
+        <a class="sb-item" href="/landing/analytics" style="text-decoration:none;color:inherit">
+          ${icon("bar-chart-2", 18)}
+          Analytics
+        </a>
         <div class="sb-spacer"></div>
         <div class="sb-foot">
           <div class="email">${esc(currentUser?.email || "")}</div>
@@ -2016,7 +2020,9 @@ function renderPagesSection(main) {
         <button class="btn btn-primary" id="btn_new_page">${icon("plus", 16)} Nouvelle page</button>
       </div>
     </div>
+    <div id="overview_kpis"></div>
     <div id="clicks_chart"></div>
+    <div id="pages_table"></div>
     <div id="pages_grid"></div>
   `;
   document.getElementById("btn_new_folder").addEventListener("click", openNewFolderModal);
@@ -2035,7 +2041,7 @@ function renderPagesSection(main) {
     });
   }
   renderPagesGrid();
-  renderClicksChart();
+  renderOverviewStats();
 }
 
 function renderDomainsSection(main) {
@@ -2215,6 +2221,155 @@ function getPeriodRange(period) {
 function bucketKeyFor(date, granularity) {
   if (granularity === "hour") return date.toISOString().slice(0,13);
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+}
+
+// ============================================================ NEW OVERVIEW STATS
+let ovPeriod = "7j";
+const OV_PERIODS = [
+  {id:"ajd",label:"Aujourd'hui",days:1},{id:"hier",label:"Hier",days:1},
+  {id:"7j",label:"7 jours",days:7},{id:"30j",label:"30 jours",days:30},{id:"3mois",label:"3 mois",days:91}
+];
+
+function ovDateRange(pid) {
+  const now=new Date(); const per=OV_PERIODS.find(p=>p.id===pid)||OV_PERIODS[2]; let from;
+  if(pid==="hier"){from=new Date(now);from.setDate(from.getDate()-1);from.setHours(0,0,0,0);const to=new Date(from);to.setHours(23,59,59,999);return{from:from.toISOString(),to:to.toISOString(),days:1};}
+  if(pid==="ajd"){from=new Date(now);from.setHours(0,0,0,0);return{from:from.toISOString(),to:now.toISOString(),days:1};}
+  from=new Date(now);from.setDate(from.getDate()-per.days);from.setHours(0,0,0,0);
+  return{from:from.toISOString(),to:now.toISOString(),days:per.days};
+}
+
+function ovGroupBy(arr,key){const m={};arr.forEach(v=>{const k=v[key]||"Inconnu";m[k]=(m[k]||0)+1});return Object.entries(m).map(([k,v])=>({key:k,count:v})).sort((a,b)=>b.count-a.count)}
+
+function ovSparkSVG(clicks, range) {
+  const days=range.days; const buckets=days<=1?24:days; const counts=Array(buckets).fill(0);
+  const from=new Date(range.from);
+  clicks.forEach(v=>{const d=new Date(v.created_at);if(days<=1){const h=d.getHours();if(h<buckets)counts[h]++}else{const diff=Math.floor((d-from)/(1000*60*60*24));if(diff>=0&&diff<buckets)counts[diff]++}});
+  const max=Math.max(1,...counts);const W=96,H=30,pts=counts.length;
+  if(pts<2)return `<svg width="${W}" height="${H}"></svg>`;
+  const x=i=>(i*W)/(pts-1); const y=v=>H-3-((v-0)/Math.max(1,max))*(H-6);
+  const d=counts.map((c,i)=>`${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(c).toFixed(1)}`).join(' ');
+  const area=d+` L ${W} ${H} L 0 ${H} Z`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block"><defs><linearGradient id="ovspk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--admin)" stop-opacity=".18"/><stop offset="100%" stop-color="var(--admin)" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#ovspk)"/><path d="${d}" fill="none" stroke="var(--admin)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function ovBarChart(clicks, range) {
+  const days=range.days;const buckets=days<=1?24:days;const counts=Array(buckets).fill(0);const labels=Array(buckets).fill("");
+  const from=new Date(range.from);
+  clicks.forEach(v=>{const d=new Date(v.created_at);if(days<=1){const h=d.getHours();if(h<buckets)counts[h]++}else{const diff=Math.floor((d-from)/(1000*60*60*24));if(diff>=0&&diff<buckets)counts[diff]++}});
+  if(days<=1){for(let i=0;i<24;i++)if(i%4===0)labels[i]=i+'h';}
+  else{const jours=['dim','lun','mar','mer','jeu','ven','sam'];for(let i=0;i<buckets;i++){const dt=new Date(from);dt.setDate(dt.getDate()+i);if(buckets<=7)labels[i]=jours[dt.getDay()];else if(i%Math.ceil(buckets/8)===0)labels[i]=dt.getDate()+'/'+(dt.getMonth()+1);}}
+  const max=Math.max(1,...counts);const W=800,H=160,P=8,BL=22;const gap=buckets>60?1:buckets>30?2:4;const bw=Math.max(2,(W-P*2-gap*(buckets-1))/buckets);const plotH=H-BL-8;const baseY=H-BL;
+  let bars="",lbls="";
+  counts.forEach((c,i)=>{const bh=c>0?Math.max(3,(c/max)*plotH):2;const x=P+i*(bw+gap);const y=baseY-bh;const r=Math.min(3,bw/2);bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="${r.toFixed(1)}" fill="var(--admin)" opacity="${c>0?.82:.3}"><title>${labels[i]||i}: ${c}</title></rect>`});
+  const stride=buckets<=10?1:buckets<=35?5:Math.ceil(buckets/8);
+  for(let i=0;i<buckets;i+=stride){const x=P+i*(bw+gap)+bw/2;if(labels[i])lbls+=`<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="10" font-family="ui-monospace,monospace" fill="var(--muted)">${esc(labels[i])}</text>`}
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block"><line x1="${P}" y1="${baseY}" x2="${W-P}" y2="${baseY}" stroke="var(--border)" stroke-width="1"/>${bars}${lbls}</svg>`;
+}
+
+async function renderOverviewStats(period) {
+  if(period) ovPeriod=period;
+  const kpiWrap=document.getElementById("overview_kpis");
+  const chartWrap=document.getElementById("clicks_chart");
+  const tableWrap=document.getElementById("pages_table");
+  if(!kpiWrap)return;
+
+  const range=ovDateRange(ovPeriod);
+  const {data:allVisits}=await sb.from("visits").select("*").gte("created_at",range.from).lte("created_at",range.to);
+  const visits=allVisits||[];
+  const views=visits.filter(v=>v.type==="view");
+  const clicks=visits.filter(v=>v.type==="click");
+  const convRate=views.length?Math.round((clicks.length/views.length)*1000)/10:0;
+  const countries=ovGroupBy(visits,"country");
+  const platforms=ovGroupBy(visits,"platform");
+  const perLabel=OV_PERIODS.find(x=>x.id===ovPeriod)?.label||"";
+
+  const periodBtns=OV_PERIODS.map(o=>`<button class="ov-per ${o.id===ovPeriod?"active":""}" data-ovper="${esc(o.id)}">${esc(o.label)}</button>`).join("");
+
+  // KPI cards
+  kpiWrap.innerHTML = `
+    <style>
+      .ov-per{padding:6px 14px;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:500;transition:all .15s}
+      .ov-per.active{background:var(--admin);color:#fff;border-color:var(--admin);font-weight:600}
+      .ov-per:hover:not(.active){border-color:var(--admin);color:var(--admin)}
+      .ov-kpi{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+      .ov-kpi.em{outline:1px solid rgba(59,157,247,.25)}
+      .ov-kpi.em::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(59,157,247,.08) 0%,transparent 42%);pointer-events:none}
+      .ov-kpi-label{font-size:11.5px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:6px;position:relative}
+      .ov-kpi-val{font-size:28px;font-weight:600;letter-spacing:-.02em;margin-top:8px;position:relative;font-variant-numeric:tabular-nums}
+      .ov-kpi-unit{font-size:15px;color:var(--muted);font-weight:500;margin-left:2px}
+      .ov-table{width:100%;border-collapse:collapse;font-size:13px}
+      .ov-table thead{background:#f6f6f8}
+      .ov-table th{text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+      .ov-table th.r{text-align:right}
+      .ov-table td{padding:12px 16px;border-top:1px solid #f0f0f5}
+      .ov-table td.r{text-align:right;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+      .ov-table tr{cursor:pointer;transition:background .1s}
+      .ov-table tbody tr:hover{background:#f8f8ff}
+      .ov-plat{display:inline-flex;align-items:center;gap:5px;background:#f0f0f5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;color:var(--ink-soft)}
+    </style>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${periodBtns}</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+      <div class="ov-kpi em"><div class="ov-kpi-label">${icon("mouse-pointer-click",13)} Clics</div><div class="ov-kpi-val">${formatNum(clicks.length)}</div></div>
+      <div class="ov-kpi"><div class="ov-kpi-label">${icon("eye",13)} Vues</div><div class="ov-kpi-val">${formatNum(views.length)}</div></div>
+      <div class="ov-kpi"><div class="ov-kpi-label">${icon("percent",13)} Conversion</div><div class="ov-kpi-val">${convRate.toString().replace(".",",")}<span class="ov-kpi-unit">%</span></div></div>
+      <div class="ov-kpi"><div class="ov-kpi-label">${icon("globe",13)} Pays</div><div class="ov-kpi-val">${countries.length}</div></div>
+    </div>
+  `;
+  kpiWrap.querySelectorAll(".ov-per").forEach(btn=>{btn.addEventListener("click",()=>renderOverviewStats(btn.dataset.ovper))});
+
+  // Chart
+  chartWrap.innerHTML = `
+    <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div><div style="font-size:14px;font-weight:600">Clics sur vos liens</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(perLabel)} · tous liens</div></div>
+        <div style="text-align:right"><div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums">${formatNum(clicks.length)}</div><div style="font-size:11px;color:var(--muted)">clics au total</div></div>
+      </div>
+      ${ovBarChart(clicks, range)}
+      ${platforms.length?`<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">${platforms.slice(0,6).map(p=>`<span class="ov-plat">${esc(p.key)} <strong>${formatNum(p.count)}</strong></span>`).join("")}</div>`:""}
+    </div>
+  `;
+
+  // Pages table
+  const pageStats=pages.map(pg=>{
+    const pv=visits.filter(v=>v.page_id===pg.id);
+    const pc=pv.filter(v=>v.type==="click");
+    const pvw=pv.filter(v=>v.type==="view");
+    const rate=pvw.length?Math.round((pc.length/pvw.length)*1000)/10:0;
+    const topC=ovGroupBy(pv,"country")[0];
+    const topP=ovGroupBy(pv,"platform")[0];
+    return{page:pg,clicks:pc.length,views:pvw.length,rate,topCountry:topC,topPlatform:topP,clicksArr:pc};
+  }).sort((a,b)=>b.clicks-a.clicks);
+
+  tableWrap.innerHTML = `
+    <div style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;font-weight:600">Vos pages <span style="color:var(--muted);font-weight:400;font-family:ui-monospace,monospace;font-size:13px">· ${pages.length}</span></div>
+      </div>
+      <table class="ov-table">
+        <thead><tr>
+          <th>Page</th><th>Tendance</th><th class="r">Clics</th><th class="r">Vues</th><th class="r">Conversion</th><th>Top pays</th><th>Source</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${pageStats.map(r=>`
+            <tr data-pageid="${esc(r.page.id)}">
+              <td><div style="font-weight:600;margin-bottom:2px">${esc(r.page.data?.name||r.page.data?.title||r.page.slug)}</div><div style="font-size:11.5px;color:var(--muted);font-family:ui-monospace,monospace">/${esc(r.page.slug)}</div></td>
+              <td>${ovSparkSVG(r.clicksArr, range)}</td>
+              <td class="r" style="font-weight:600;font-size:14px">${formatNum(r.clicks)}</td>
+              <td class="r" style="color:var(--muted)">${formatNum(r.views)}</td>
+              <td class="r" style="font-variant-numeric:tabular-nums">${r.rate.toString().replace(".",",")} %</td>
+              <td>${r.topCountry?`<span style="color:var(--ink-soft)">${esc(r.topCountry.key)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+              <td>${r.topPlatform?`<span class="ov-plat">${esc(r.topPlatform.key)}</span>`:'—'}</td>
+              <td style="text-align:right">${icon("chevron-right",16)}</td>
+            </tr>
+          `).join("")}
+          ${pageStats.length===0?`<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--muted)">Aucune donnée pour cette période</td></tr>`:""}
+        </tbody>
+      </table>
+    </div>
+  `;
+  tableWrap.querySelectorAll("tr[data-pageid]").forEach(row=>{
+    row.addEventListener("click",()=>openPageDrawer(row.dataset.pageid));
+  });
 }
 
 async function renderClicksChart(period) {
@@ -2678,6 +2833,7 @@ async function openPageDrawer(id) {
         <button data-tab="links">Liens</button>
         <button data-tab="design">Apparence</button>
         <button data-tab="platform">Plateformes</button>
+        <button data-tab="stats">Stats</button>
         <button data-tab="settings">Réglages</button>
       </div>
       <div id="tab_content"></div>
@@ -2839,6 +2995,9 @@ function renderTab(tab) {
         <label>Texte du bouton</label><input type="text" data-field="tiktok_button" value="${esc(d.tiktok_button||"APPUI LONG POUR OUVRIR")}">
       </fieldset>
     `;
+  } else if (tab === "stats") {
+    area.innerHTML = `<div id="stats_area" style="padding:4px 0"><div style="text-align:center;padding:24px;color:var(--muted)">Chargement des stats…</div></div>`;
+    renderStatsTab(p);
   } else if (tab === "settings") {
     const folderOpts = `<option value="">Sans dossier</option>` + folders.map(f => `<option value="${esc(f.id)}" ${p.folder_id===f.id?"selected":""}>${esc((f.emoji||"📁")+" "+f.name)}</option>`).join("");
     area.innerHTML = `
@@ -2856,6 +3015,141 @@ function renderTab(tab) {
   }
 
   bindInputs(area);
+}
+
+// ============================================================ STATS TAB
+const STAT_PERIODS = [
+  {id:"ajd", label:"Aujourd'hui", days:1},
+  {id:"hier", label:"Hier", days:1},
+  {id:"7j", label:"7 jours", days:7},
+  {id:"30j", label:"30 jours", days:30},
+  {id:"3mois", label:"3 mois", days:91},
+];
+let statPeriod = "7j";
+
+function statDateRange(pid) {
+  const now = new Date();
+  const per = STAT_PERIODS.find(p=>p.id===pid) || STAT_PERIODS[2];
+  let from;
+  if (pid==="hier") { from=new Date(now); from.setDate(from.getDate()-1); from.setHours(0,0,0,0); const to=new Date(from); to.setHours(23,59,59,999); return {from:from.toISOString(),to:to.toISOString(),days:1}; }
+  if (pid==="ajd") { from=new Date(now); from.setHours(0,0,0,0); return {from:from.toISOString(),to:now.toISOString(),days:1}; }
+  from=new Date(now); from.setDate(from.getDate()-per.days); from.setHours(0,0,0,0);
+  return {from:from.toISOString(),to:now.toISOString(),days:per.days};
+}
+
+function statGroupBy(arr, key) {
+  const m={};
+  arr.forEach(v=>{ const k=v[key]||"Inconnu"; m[k]=(m[k]||0)+1; });
+  return Object.entries(m).map(([k,v])=>({key:k,count:v})).sort((a,b)=>b.count-a.count);
+}
+
+function statBarHTML(items, total, color) {
+  if (!items.length) return `<div style="padding:12px 0;color:var(--muted);font-size:13px">Aucune donnée</div>`;
+  return items.slice(0,8).map(it => {
+    const pctVal = total ? Math.round((it.count/total)*100) : 0;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0">
+        <span style="flex:1;font-size:13px;font-weight:500">${esc(it.key)}</span>
+        <span style="font-size:12px;color:var(--muted);font-family:ui-monospace,monospace">${formatNum(it.count)}</span>
+        <span style="font-size:12px;font-weight:600;font-family:ui-monospace,monospace;min-width:40px;text-align:right">${pctVal}%</span>
+      </div>
+      <div style="height:5px;border-radius:99px;background:#f0f0f5;overflow:hidden;margin-bottom:2px">
+        <div style="width:${pctVal}%;height:100%;border-radius:99px;background:${color};transition:width .3s"></div>
+      </div>`;
+  }).join("");
+}
+
+function statMiniChart(visits, range) {
+  const days = range.days;
+  const buckets = days <= 1 ? 24 : days;
+  const counts = Array(buckets).fill(0);
+  const from = new Date(range.from);
+  visits.forEach(v => {
+    const d = new Date(v.created_at);
+    if (days <= 1) { const h=d.getHours(); if(h<buckets) counts[h]++; }
+    else { const diff=Math.floor((d-from)/(1000*60*60*24)); if(diff>=0&&diff<buckets) counts[diff]++; }
+  });
+  const max = Math.max(1,...counts);
+  const W=600, H=80, P=4;
+  const gap = buckets>60?1:buckets>30?2:3;
+  const bw = Math.max(2,(W-P*2-gap*(buckets-1))/buckets);
+  let bars = "";
+  counts.forEach((c,i)=>{
+    const bh = c>0?Math.max(2,(c/max)*(H-10)):1;
+    const x = P+i*(bw+gap);
+    const y = H-bh;
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="${c>0?'var(--admin)':'#e0e0e5'}" opacity="${c>0?0.85:0.4}"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block">${bars}</svg>`;
+}
+
+const DEVICE_LABELS = {iphone:"iPhone",android:"Android",pc:"Windows",mac:"Mac",tablet:"Tablette",other:"Autre"};
+const PLATFORM_LABELS = {tiktok:"TikTok",instagram:"Instagram",snapchat:"Snapchat",facebook:"Facebook",direct:"Direct",google:"Google",twitter:"Twitter"};
+
+async function renderStatsTab(p, period) {
+  if (period) statPeriod = period;
+  const area = document.getElementById("stats_area");
+  if (!area) return;
+  const range = statDateRange(statPeriod);
+  const {data,error} = await sb.from("visits").select("*").eq("page_id",p.id).gte("created_at",range.from).lte("created_at",range.to);
+  const visits = data || [];
+  const views = visits.filter(v=>v.type==="view");
+  const clicks = visits.filter(v=>v.type==="click");
+  const convRate = views.length ? Math.round((clicks.length/views.length)*1000)/10 : 0;
+  const countries = statGroupBy(visits,"country");
+  const cities = statGroupBy(visits,"city");
+  const devices = statGroupBy(visits,"device").map(d=>({...d, key:DEVICE_LABELS[d.key]||d.key}));
+  const platforms = statGroupBy(visits,"platform").map(d=>({...d, key:PLATFORM_LABELS[d.key]||d.key}));
+  const perLabel = STAT_PERIODS.find(x=>x.id===statPeriod)?.label||"";
+
+  const periodTabs = STAT_PERIODS.map(o=>`<button class="period-tab ${o.id===statPeriod?"active":""}" data-speriod="${esc(o.id)}" style="padding:6px 12px;border:1px solid ${o.id===statPeriod?'var(--admin)':'var(--border)'};background:${o.id===statPeriod?'var(--admin)':'#fff'};color:${o.id===statPeriod?'#fff':'var(--ink)'};border-radius:8px;cursor:pointer;font-size:12px;font-weight:${o.id===statPeriod?600:500};font-family:inherit">${esc(o.label)}</button>`).join("");
+
+  area.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">${periodTabs}</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:#f6f6f8;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);font-weight:500;margin-bottom:6px">Clics</div>
+        <div style="font-size:26px;font-weight:600;letter-spacing:-.02em">${formatNum(clicks.length)}</div>
+      </div>
+      <div style="background:#f6f6f8;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);font-weight:500;margin-bottom:6px">Vues</div>
+        <div style="font-size:26px;font-weight:600;letter-spacing:-.02em">${formatNum(views.length)}</div>
+      </div>
+      <div style="background:#f6f6f8;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);font-weight:500;margin-bottom:6px">Conversion</div>
+        <div style="font-size:26px;font-weight:600;letter-spacing:-.02em">${convRate.toString().replace(".",",")}%</div>
+      </div>
+    </div>
+
+    <div style="background:#f6f6f8;border:1px solid var(--border);border-radius:12px;padding:14px 14px 8px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:2px">Clics · ${esc(perLabel)}</div>
+      <div style="margin-top:8px">${statMiniChart(clicks, range)}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <fieldset style="margin:0;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <legend style="font-size:13px;font-weight:600;padding:0 6px">Pays</legend>
+        ${statBarHTML(countries, visits.length, "var(--admin)")}
+      </fieldset>
+      <fieldset style="margin:0;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <legend style="font-size:13px;font-weight:600;padding:0 6px">Villes</legend>
+        ${statBarHTML(cities, visits.length, "#6366f1")}
+      </fieldset>
+      <fieldset style="margin:0;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <legend style="font-size:13px;font-weight:600;padding:0 6px">Appareils</legend>
+        ${statBarHTML(devices, visits.length, "#ff9500")}
+      </fieldset>
+      <fieldset style="margin:0;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <legend style="font-size:13px;font-weight:600;padding:0 6px">Sources</legend>
+        ${statBarHTML(platforms, visits.length, "#e1306c")}
+      </fieldset>
+    </div>
+  `;
+
+  area.querySelectorAll("[data-speriod]").forEach(btn => {
+    btn.addEventListener("click", () => renderStatsTab(p, btn.dataset.speriod));
+  });
 }
 
 function bindInputs(area) {

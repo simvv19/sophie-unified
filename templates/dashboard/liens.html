@@ -18,7 +18,7 @@
   --bg:#FAFAF9;--bg-elevated:#FFFFFF;--bg-muted:#F4F3F1;--bg-sunken:#EFEDE9;
   --border:#E8E6E1;--border-strong:#D4D1CB;--border-subtle:#F0EEEA;
   --fg:#0A0A0A;--fg-muted:#5C5A55;--fg-subtle:#8A8780;--fg-on-accent:#FFFFFF;
-  --accent:#FF3B30;--accent-hover:#E62E24;--accent-press:#C9261D;--accent-soft:#FFE5E2;--accent-soft-hover:#FFD3CE;
+  --accent:#3B9DF7;--accent-hover:#1F7BD6;--accent-press:#1565B8;--accent-soft:#E4F1FE;--accent-soft-hover:#D0E5FC;
   --orange:#FF9500;--orange-soft:#FFF1DC;
   --success:#1F8A3C;--success-soft:#E3F4E7;--warning:#B8860B;--warning-soft:#FBF1D7;
   --danger:#D8241A;--danger-soft:#FBE0DE;--info:#2563EB;--info-soft:#DDE8FE;
@@ -152,7 +152,7 @@ function TimeSeriesChart({series,height=240,accent='var(--accent)',gradId='ts-gr
         </div>
       )})}
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{position:'absolute',inset:0,width:'100%',height:'100%',display:'block',overflow:'visible'}}>
-        <defs><linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF3B30" stopOpacity="0.20"/><stop offset="100%" stopColor="#FF3B30" stopOpacity="0"/></linearGradient></defs>
+        <defs><linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3B9DF7" stopOpacity="0.20"/><stop offset="100%" stopColor="#3B9DF7" stopOpacity="0"/></linearGradient></defs>
         {dArea&&<path d={dArea} fill={`url(#${gradId})`}/>}
         {dPath&&<path d={dPath} fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>}
         {hiPt&&hiPt.value!=null&&<line x1={xPct(hi)*W/100} x2={xPct(hi)*W/100} y1={PT*H/100} y2={baseY} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke"/>}
@@ -182,7 +182,7 @@ function Sparkline({series,width=96,height=30,color='var(--accent)'}){
   const area=d+` L ${width} ${height} L 0 ${height} Z`;
   return(
     <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} style={{display:'block'}}>
-      <defs><linearGradient id="spk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF3B30" stopOpacity="0.18"/><stop offset="100%" stopColor="#FF3B30" stopOpacity="0"/></linearGradient></defs>
+      <defs><linearGradient id="spk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3B9DF7" stopOpacity="0.18"/><stop offset="100%" stopColor="#3B9DF7" stopOpacity="0"/></linearGradient></defs>
       <path d={area} fill="url(#spk)"/><path d={d} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
@@ -493,6 +493,7 @@ function TopBar({title,subtitle,back}){
         <div style={{fontSize:15,fontWeight:600,letterSpacing:'-0.01em'}}>{title}</div>
         {subtitle&&<div style={{fontSize:12,color:'var(--fg-muted)',marginTop:1}}>{subtitle}</div>}
       </div>
+      <a href="/landing/edit" style={{display:'inline-flex',alignItems:'center',gap:6,height:34,padding:'0 14px',borderRadius:8,border:'1px solid var(--border-strong)',background:'#fff',color:'var(--fg)',fontSize:13,fontWeight:500,textDecoration:'none',whiteSpace:'nowrap'}}><i data-lucide="pencil" style={{width:14,height:14}}></i> Gérer mes pages</a>
     </header>
   );
 }
@@ -504,7 +505,7 @@ function App(){
   function back(){setView('overview');setPage(null)}
   let title,subtitle,backFn=null,screen;
   if(view==='detail'&&page){title=page.data?.title||page.slug;subtitle='Analytics de la page';backFn=back;screen=<PageDetail page={page} period={period} setPeriod={setPeriod}/>}
-  else{title='Liens';subtitle='Suivi des clics sur vos pages';screen=<LinksOverview period={period} setPeriod={setPeriod} onOpen={openPage}/>}
+  else{title='Mes pages';subtitle='Suivi des clics sur vos pages';screen=<LinksOverview period={period} setPeriod={setPeriod} onOpen={openPage}/>}
   return(
     <div style={{minHeight:'100vh',maxWidth:1320,margin:'0 auto'}}>
       <TopBar title={title} subtitle={subtitle} back={backFn}/>
