@@ -331,7 +331,7 @@ function NewPageModal({onClose,onCreated}){
   async function submit(e){
     e.preventDefault();if(!slug.trim()){setErr('Slug requis');return}
     setSaving(true);setErr('');
-    const {data,error}=await sb.from('landing_pages').insert({slug:slug.trim(),data:{name:name.trim()||slug.trim(),title:name.trim()||slug.trim(),url:url.trim()||null}}).select().single();
+    const {data,error}=await sb.from('landing_pages').insert({owner_id:'7c00387c-d55f-4952-a14c-5d8d14029e5c',slug:slug.trim(),data:{name:name.trim()||slug.trim(),title:name.trim()||slug.trim(),url:url.trim()||null}}).select().single();
     if(error){setErr(error.message);setSaving(false);return}
     onCreated(data);onClose();
   }
