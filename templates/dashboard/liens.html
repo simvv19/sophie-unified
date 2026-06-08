@@ -39,6 +39,102 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--fg);font-size
 @keyframes czspin{to{transform:rotate(360deg)}}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:3px solid var(--bg-elevated)}
+
+/* ========== DRAWER ========== */
+@keyframes dFade{from{opacity:0}to{opacity:1}}
+@keyframes dSlide{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.drawer-overlay{position:fixed;inset:0;background:rgba(10,11,36,.4);backdrop-filter:blur(4px);z-index:100;animation:dFade .2s}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(960px,100vw);background:#fff;z-index:101;display:grid;grid-template-columns:1fr 480px;animation:dSlide .25s cubic-bezier(.2,.9,.3,1)}
+.drawer-form{overflow-y:auto;padding:22px 24px 110px;border-right:1px solid var(--border)}
+.drawer-preview{background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;position:relative}
+.drawer-preview iframe{width:380px;height:calc(100vh - 40px);max-height:780px;border:none;border-radius:22px;box-shadow:0 20px 40px -16px rgba(10,11,36,.25);background:#fff}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.drawer-head h2{font-family:'Geist',system-ui,sans-serif;font-weight:600;font-size:20px;margin:0;letter-spacing:-.48px}
+.drawer-head .x{background:none;border:none;padding:6px;border-radius:8px;cursor:pointer;color:var(--fg-muted);font-size:22px;line-height:1}
+.drawer-head .x:hover{background:#f6f6f8}
+.drawer-tabs{display:flex;gap:4px;padding:4px;background:#f0f0f5;border-radius:12px;margin-bottom:18px}
+.drawer-tabs button{flex:1;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#6B6B6E;font-family:inherit}
+.drawer-tabs button.active{background:#fff;color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.06);font-weight:600}
+.drawer-save{position:absolute;bottom:0;left:0;right:480px;background:#fff;border-top:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:12px}
+.drawer-save .status{flex:1;font-size:12.5px;color:var(--fg-muted)}
+.drawer-save .status.saving{color:var(--accent)}
+.drawer-save .status.saved{color:#34c759}
+.drawer fieldset{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:0 0 16px}
+.drawer fieldset legend{font-size:14px;font-weight:600;padding:0 8px;color:var(--fg)}
+.drawer fieldset label{display:block;font-size:12.5px;font-weight:500;color:var(--fg-muted);margin:10px 0 4px}
+.drawer fieldset input[type="text"],.drawer fieldset input[type="url"],.drawer fieldset textarea,.drawer fieldset select{width:100%;height:36px;padding:0 12px;border:1px solid var(--border-strong);border-radius:8px;font-size:14px;font-family:inherit;outline:none;background:#fff}
+.drawer fieldset textarea{height:auto;padding:10px 12px;resize:vertical}
+.drawer fieldset .hint{font-size:11.5px;color:var(--fg-subtle);margin:4px 0 0}
+.drawer fieldset .slug-row{display:flex;align-items:center}
+.drawer fieldset .slug-row .prefix{padding:0 10px;height:36px;display:flex;align-items:center;background:var(--bg-muted);border:1px solid var(--border-strong);border-right:none;border-radius:8px 0 0 8px;font-size:12px;color:var(--fg-subtle);white-space:nowrap}
+.drawer fieldset .slug-row input{border-radius:0 8px 8px 0}
+.drawer fieldset .toggle-row{display:flex;align-items:center;gap:8px;margin:8px 0}
+.drawer fieldset .toggle-row label{margin:0;cursor:pointer;font-size:13px}
+.drawer fieldset .color-row{display:flex;align-items:center;gap:8px}
+.drawer fieldset .color-row input[type="color"]{width:36px;height:36px;border:1px solid var(--border-strong);border-radius:8px;padding:2px;cursor:pointer}
+.drawer fieldset .color-row input[type="text"]{flex:1}
+.drawer fieldset .photo-row{display:flex;align-items:center;gap:12px;margin:4px 0}
+.drawer fieldset .photo-preview{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border)}
+.drawer .seg{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.drawer .seg label{flex:1;cursor:pointer;text-align:center}
+.drawer .seg label input{display:none}
+.drawer .seg label .opt{display:block;padding:8px 10px;font-size:13px;font-weight:500;color:var(--fg-muted)}
+.drawer .seg label input:checked+.opt{background:var(--accent);color:#fff;font-weight:600}
+
+/* Link edit list */
+.link-edit-empty{padding:24px;text-align:center;color:var(--fg-muted);background:#f6f6f8;border:1px dashed var(--border);border-radius:12px;font-size:13.5px}
+.link-edit-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:6px}
+.link-edit-handle{color:var(--fg-muted);font-size:14px;cursor:grab}
+.link-edit-icon{width:32px;height:32px;border-radius:8px;background:#f6f6f8;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+.link-edit-meta{flex:1;min-width:0}
+.link-edit-title{font-weight:600;font-size:13.5px;color:var(--fg);display:flex;align-items:center;gap:6px}
+.link-edit-off{font-size:10px;padding:1px 6px;border-radius:4px;background:#e8e8ec;color:#8a7a90;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.link-edit-sub{font-size:11.5px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.link-edit-user{color:var(--accent);font-weight:600}
+.link-edit-stats{font-size:11px;color:var(--accent);background:#f0f0f5;padding:3px 8px;border-radius:999px;font-weight:600;flex:none}
+.link-edit-btn{background:none;border:1px solid var(--border);width:28px;height:28px;border-radius:7px;cursor:pointer;color:var(--fg-subtle);font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.link-edit-btn:hover:not(:disabled){background:#f6f6f8;color:var(--fg)}
+.link-edit-btn:disabled{opacity:.3;cursor:not-allowed}
+.link-edit-btn.danger:hover{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
+
+/* Theme / Card style / Background grids */
+.theme-grid{display:flex;gap:8px;flex-wrap:wrap}
+.theme-chip{border:2px solid transparent;border-radius:10px;padding:6px;cursor:pointer;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;width:64px}
+.theme-chip.active{border-color:var(--accent)}
+.theme-grad{width:40px;height:40px;border-radius:8px;display:block}
+.theme-name{font-size:10px;color:var(--fg-muted);font-weight:500}
+.cstyle-grid,.bg-grid{display:flex;gap:8px;flex-wrap:wrap}
+.cstyle-chip,.bg-chip{border:2px solid transparent;border-radius:10px;padding:6px;cursor:pointer;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;width:72px}
+.cstyle-chip.active,.bg-chip.active{border-color:var(--accent)}
+.cstyle-mini{width:48px;height:32px;border-radius:6px;background:#f0f0f5;border:1px solid var(--border)}
+.bg-preview{width:48px;height:32px;border-radius:6px;border:1px solid var(--border)}
+.cstyle-name,.bg-name{font-size:10px;color:var(--fg-muted);font-weight:500}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,11,36,.4);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;animation:dFade .2s}
+.modal{background:#fff;border-radius:16px;padding:24px;width:420px;max-width:92vw;box-shadow:0 20px 40px -16px rgba(10,11,36,.25);z-index:201}
+.modal h3{font-size:18px;font-weight:600;margin:0 0 16px}
+.modal label{display:block;font-size:12.5px;font-weight:500;color:var(--fg-muted);margin:10px 0 4px}
+.modal input[type="text"],.modal input[type="url"]{width:100%;height:36px;padding:0 12px;border:1px solid var(--border-strong);border-radius:8px;font-size:14px;font-family:inherit;outline:none}
+.modal .hint{font-size:11.5px;color:var(--fg-subtle);margin:4px 0 0}
+.modal .modal-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+
+/* Btn styles for drawer */
+.btn{height:36px;padding:0 18px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;border:1px solid var(--border-strong);background:#fff;color:var(--fg)}
+.btn:hover{background:var(--bg-muted)}
+.btn-primary{background:var(--accent);color:#fff;border:none}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-danger{background:#fff;color:var(--danger);border:1px solid var(--danger)}
+.btn-danger:hover{background:var(--danger-soft)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;animation:dFade .2s}
+
+@media(max-width:768px){
+  .drawer{grid-template-columns:1fr;width:100vw}
+  .drawer-preview{display:none}
+  .drawer-save{right:0}
+}
 </style>
 </head>
 <body>
@@ -526,220 +622,514 @@ function PageDetail({page,period,setPeriod}){
   );
 }
 
-// ============================================================ EDIT DRAWER
+// ============================================================ EDIT DRAWER (vanilla JS - same as landing.html)
+const CARD_STYLES=[
+  {id:"soft",name:"Soft gradient"},{id:"polaroid",name:"Polaroid"},{id:"minimal",name:"Editorial"},
+  {id:"sticker",name:"Sticker Y2K"},{id:"locked",name:"Locked / VIP"},{id:"magnetic",name:"Magnetic glow"},
+  {id:"heartbeat",name:"Live battement"},{id:"marquee",name:"Marquee"},{id:"liquid",name:"Liquid fill"},
+  {id:"wordswap",name:"Word swap"},{id:"imessage",name:"iMessage"},{id:"cassette",name:"Mixtape"},
+  {id:"slide",name:"Slide to unlock"},{id:"kiss",name:"Bisou"},{id:"letter",name:"Lettre"}
+];
+const BACKGROUNDS=[
+  {id:"rose",name:"Rose Pop",bg:"radial-gradient(900px 600px at 80% -10%,#b3d4ff 0%,transparent 55%),radial-gradient(700px 500px at -10% 110%,#c4dfff 0%,transparent 60%),linear-gradient(180deg,#e8f0fe 0%,#d6e8ff 100%)"},
+  {id:"sunset",name:"Sunset",bg:"radial-gradient(900px 600px at 80% -10%,#fbcfe8 0%,transparent 55%),radial-gradient(700px 500px at -10% 110%,#fde68a 0%,transparent 60%),linear-gradient(180deg,#fff7ed 0%,#fde68a 100%)"},
+  {id:"lavande",name:"Lavande",bg:"radial-gradient(900px 600px at 80% -10%,#ddd6fe 0%,transparent 55%),radial-gradient(700px 500px at -10% 110%,#c4b5fd 0%,transparent 60%),linear-gradient(180deg,#f5f3ff 0%,#ddd6fe 100%)"},
+  {id:"ocean",name:"Ocean",bg:"radial-gradient(900px 600px at 80% -10%,#a5f3fc 0%,transparent 55%),radial-gradient(700px 500px at -10% 110%,#93c5fd 0%,transparent 60%),linear-gradient(180deg,#ecfeff 0%,#bae6fd 100%)"},
+  {id:"night",name:"Nuit",bg:"radial-gradient(900px 600px at 80% -10%,#4c1d95 0%,transparent 55%),radial-gradient(700px 500px at -10% 110%,#831843 0%,transparent 60%),linear-gradient(180deg,#1e1b4b 0%,#0f172a 100%)"},
+  {id:"cream",name:"Creme",bg:"radial-gradient(900px 600px at 80% -10%,#fef3c7 0%,transparent 55%),radial-gradient(700px 500px at -10% 110%,#fed7aa 0%,transparent 60%),linear-gradient(180deg,#fffbeb 0%,#fef3c7 100%)"},
+  {id:"mint",name:"Menthe",bg:"radial-gradient(900px 600px at 80% -10%,#a7f3d0 0%,transparent 55%),radial-gradient(700px 500px at -10% 110%,#6ee7b7 0%,transparent 60%),linear-gradient(180deg,#ecfdf5 0%,#d1fae5 100%)"},
+  {id:"blanc",name:"Minimal",bg:"linear-gradient(180deg,#ffffff 0%,#f5f5f4 100%)"}
+];
 const THEMES=[
-  {id:'rose',name:'Rose',color:'#F9A8D4'},{id:'violet',name:'Violet',color:'#A78BFA'},
-  {id:'bleu',name:'Bleu Nuit',color:'#60A5FA'},{id:'vert',name:'Vert',color:'#6EE7B7'},
-  {id:'orange',name:'Orange',color:'#FDBA74'},{id:'noir',name:'Noir',color:'#1F1D18'},
+  {id:"rose",name:"Rose Pop",rose:"#2D7FF9",deep:"#1A6BE0",ink:"#1D1D1E",inksoft:"#808084"},
+  {id:"lilas",name:"Lilas",rose:"#c084fc",deep:"#9333ea",ink:"#2e1065",inksoft:"#7c3aed"},
+  {id:"peche",name:"Peche",rose:"#fbb6a3",deep:"#f97316",ink:"#431407",inksoft:"#9a3412"},
+  {id:"or",name:"Or Royal",rose:"#fbbf24",deep:"#d97706",ink:"#422006",inksoft:"#92400e"},
+  {id:"vert",name:"Vert Tendre",rose:"#86efac",deep:"#16a34a",ink:"#052e16",inksoft:"#166534"},
+  {id:"bleu",name:"Bleu Nuit",rose:"#60a5fa",deep:"#2563eb",ink:"#0c1d4e",inksoft:"#1e3a8a"},
+  {id:"rouge",name:"Rouge Velours",rose:"#f87171",deep:"#dc2626",ink:"#450a0a",inksoft:"#991b1b"},
+  {id:"charbon",name:"Charbon",rose:"#a1a1aa",deep:"#52525b",ink:"#18181b",inksoft:"#3f3f46"},
+  {id:"cafe",name:"Cafe",rose:"#d4a574",deep:"#8b5a3c",ink:"#2d1810",inksoft:"#6b4226"},
+  {id:"menthe",name:"Menthe",rose:"#5eead4",deep:"#0d9488",ink:"#042f2e",inksoft:"#115e59"},
+  {id:"fraise",name:"Fraise",rose:"#fb7185",deep:"#e11d48",ink:"#4c0519",inksoft:"#9f1239"},
+  {id:"lavande",name:"Lavande",rose:"#a5b4fc",deep:"#6366f1",ink:"#1e1b4b",inksoft:"#3730a3"}
 ];
 
-function autoIcon(url){
-  if(!url)return '';
-  if(/t\.me|telegram/i.test(url))return '✈️';
-  if(/instagram/i.test(url))return '📸';
-  if(/snapchat/i.test(url))return '👻';
-  if(/tiktok/i.test(url))return '🎵';
-  if(/twitter|x\.com/i.test(url))return '🐦';
-  if(/onlyfans/i.test(url))return '🔥';
-  return '🔗';
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function iconFor(url){
+  if(!url)return'🔗';
+  if(/t\.me|telegram/i.test(url))return'✈️';if(/instagram/i.test(url))return'📸';
+  if(/snapchat/i.test(url))return'👻';if(/tiktok/i.test(url))return'🎵';
+  if(/twitter|x\.com/i.test(url))return'🐦';if(/onlyfans/i.test(url))return'🔥';
+  if(/youtube/i.test(url))return'▶️';return'🔗';
+}
+function slugify(s){return s.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')}
+function normalizeUrl(u){if(!u)return u;u=String(u).trim();if(!u)return u;if(/^[a-z]+:\/\//i.test(u))return u;return"https://"+u.replace(/^\/+/,"")}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
+function lIcon(name,size=14){return `<svg width="${size}" height="${size}" style="pointer-events:none"><use href="#"></use></svg>`}
+
+let openPageId=null, drawerSaveTimer=null;
+
+// Drawer page reference
+let _drawerPage = null;
+function currentPage() { return _drawerPage; }
+
+async function openPageDrawer(pageObj) {
+  _drawerPage = pageObj;
+  openPageId = pageObj.id;
+  const p = pageObj;
+  // Load links
+  const r = await sb.from("page_links").select("*").eq("page_id", p.id).order("position", {ascending:true});
+  p._links = r.data || [];
+  document.querySelectorAll(".drawer-overlay,.drawer").forEach(x=>x.remove());
+  const overlay = document.createElement("div"); overlay.className = "drawer-overlay";
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", closePageDrawer);
+
+  const drawer = document.createElement("div"); drawer.className = "drawer";
+  drawer.innerHTML = `
+    <div class="drawer-form">
+      <div class="drawer-head">
+        <h2>Edition · /<span id="hint_slug">${esc(p.slug)}</span></h2>
+        <button class="x" data-close>×</button>
+      </div>
+      <div class="drawer-tabs">
+        <button class="active" data-tab="content">Contenu</button>
+        <button data-tab="links">Liens</button>
+        <button data-tab="design">Apparence</button>
+        <button data-tab="platform">Plateformes</button>
+        <button data-tab="settings">Reglages</button>
+      </div>
+      <div id="tab_content"></div>
+    </div>
+    <div class="drawer-preview">
+      <iframe id="preview" title="Apercu"></iframe>
+    </div>
+    <div class="drawer-save">
+      <span class="status saved" id="save_status">Sauvegarde ✓</span>
+      <button class="btn btn-danger" id="btn_delete_page">Supprimer la page</button>
+    </div>`;
+  document.body.appendChild(drawer);
+
+  drawer.querySelector("[data-close]").addEventListener("click", closePageDrawer);
+  drawer.querySelectorAll(".drawer-tabs button").forEach(b => {
+    b.addEventListener("click", () => {
+      drawer.querySelectorAll(".drawer-tabs button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      renderTab(b.dataset.tab);
+    });
+  });
+  document.getElementById("btn_delete_page").addEventListener("click", onDeleteCurrentPage);
+
+  renderTab("content");
+  updatePreview();
 }
 
-function EditDrawer({page,onClose,onUpdated}){
-  const [tab,setTab]=useState('content');
-  const [pg,setPg]=useState(page);
-  const [d,setD]=useState(page.data||{});
-  const [links,setLinks]=useState([]);
-  const [saving,setSaving]=useState(false);
-  const [linkModal,setLinkModal]=useState(null); // null | {editing:link} | {editing:null}
-  const saveTimer=useRef(null);
+function closePageDrawer() {
+  document.querySelectorAll(".drawer-overlay,.drawer").forEach(x=>x.remove());
+  openPageId = null; _drawerPage = null;
+}
 
-  useEffect(()=>{
-    sb.from('page_links').select('*').eq('page_id',page.id).order('position',{ascending:true}).then(r=>setLinks(r.data||[]));
-  },[page.id]);
-  useEffect(()=>{if(window.lucide)setTimeout(()=>lucide.createIcons(),50)},[tab,links,linkModal]);
+function renderTab(tab) {
+  const p = currentPage(); if (!p) return;
+  const d = p.data || {};
+  const area = document.getElementById("tab_content");
 
-  function updateField(key,val){
-    const nd={...d,[key]:val};setD(nd);
-    if(saveTimer.current)clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(async()=>{
-      await sb.from('landing_pages').update({data:nd}).eq('id',pg.id);
-      if(onUpdated)onUpdated({...pg,data:nd});
-    },800);
-  }
-  function updateSlug(val){
-    const ns=val.replace(/[^a-z0-9-_]/gi,'');
-    setPg(p=>({...p,slug:ns}));
-    if(saveTimer.current)clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(async()=>{
-      await sb.from('landing_pages').update({slug:ns}).eq('id',pg.id);
-    },800);
+  if (tab === "content") {
+    area.innerHTML = `
+      <fieldset>
+        <legend>Identite</legend>
+        <label>Slug</label>
+        <div class="slug-row"><span class="prefix">/</span><input type="text" data-slug value="${esc(p.slug)}"></div>
+        <label>Nom affiche</label><input type="text" data-field="name" value="${esc(d.name||"")}">
+        <label>Handle</label><input type="text" data-field="handle" value="${esc(d.handle||"")}">
+        <div class="toggle-row"><input type="checkbox" data-field="verified" ${d.verified?"checked":""} id="cb_v"><label for="cb_v">Badge "verifiee"</label></div>
+        <label>Sous-titre</label><input type="text" data-field="sub" value="${esc(d.sub||"")}">
+      </fieldset>
+      <fieldset>
+        <legend>Carte / Lien</legend>
+        <label>Tag</label><input type="text" data-field="tag" value="${esc(d.tag||"")}">
+        <label>Titre</label><input type="text" data-field="card_title" value="${esc(d.card_title||"")}">
+        <label>Description</label><textarea data-field="card_desc">${esc(d.card_desc||"")}</textarea>
+        <label>Texte du bouton</label><input type="text" data-field="cta" value="${esc(d.cta||"")}">
+        <label>URL du lien</label><input type="url" data-field="url" value="${esc(d.url||"")}" placeholder="https://t.me/...">
+        <p class="hint">Le lien sera masque : les visiteurs verront <code>sophiemercier.fr/go/${esc(p.slug)}</code></p>
+      </fieldset>
+      <fieldset>
+        <legend>Chips</legend>
+        <div class="toggle-row"><input type="checkbox" data-field="chip_online" ${d.chip_online?"checked":""} id="cb_o"><label for="cb_o">Pastille "En ligne"</label></div>
+        <label>Texte</label><input type="text" data-field="online_text" value="${esc(d.online_text||"")}">
+        <div class="toggle-row"><input type="checkbox" data-field="chip_location" ${d.chip_location?"checked":""} id="cb_l"><label for="cb_l">Pastille localisation</label></div>
+        <label>Texte</label><input type="text" data-field="location_text" value="${esc(d.location_text||"")}">
+      </fieldset>
+      <fieldset>
+        <legend>Footer</legend>
+        <label>Signature</label><input type="text" data-field="kiss" value="${esc(d.kiss||"")}">
+        <label>Copyright</label><input type="text" data-field="copy" value="${esc(d.copy||"")}">
+      </fieldset>
+    `;
+  } else if (tab === "links") {
+    area.innerHTML = `
+      <fieldset>
+        <legend>Liens additionnels</legend>
+        <p class="hint">En plus de la carte principale, tu peux ajouter des boutons (Telegram, Insta, Snap...). Chaque bouton a son propre tracker de clics.</p>
+        <div id="links_list" class="links-edit-list"></div>
+        <button class="btn btn-primary" id="btn_add_link" style="margin-top:12px">+ Ajouter un lien</button>
+      </fieldset>
+    `;
+    renderLinksEditList();
+    document.getElementById("btn_add_link").addEventListener("click", () => openLinkModal(null));
+  } else if (tab === "design") {
+    const themeChips = THEMES.map(t => `
+      <button class="theme-chip" data-theme="${esc(t.id)}" type="button" title="${esc(t.name)}">
+        <span class="theme-grad" style="background:linear-gradient(135deg,${t.rose} 0%,${t.deep} 100%)"></span>
+        <span class="theme-name">${esc(t.name)}</span>
+      </button>`).join("");
+    const styleChips = CARD_STYLES.map(c => `
+      <button class="cstyle-chip ${(d.card_style||"soft")===c.id?"active":""}" data-style="${esc(c.id)}" type="button" title="${esc(c.name)}">
+        <span class="cstyle-mini cstyle-mini-${esc(c.id)}"></span>
+        <span class="cstyle-name">${esc(c.name)}</span>
+      </button>`).join("");
+    const bgChips = BACKGROUNDS.map(b => `
+      <button class="bg-chip ${(d.bg_style||"rose")===b.id?"active":""}" data-bg="${esc(b.id)}" type="button" title="${esc(b.name)}">
+        <span class="bg-preview" style="background:${b.bg}"></span>
+        <span class="bg-name">${esc(b.name)}</span>
+      </button>`).join("");
+    area.innerHTML = `
+      <fieldset>
+        <legend>Style de carte</legend>
+        <p class="hint">Choisis l'apparence de ta carte de lien principale.</p>
+        <div class="cstyle-grid">${styleChips}</div>
+      </fieldset>
+      <fieldset>
+        <legend>Fond de la landing</legend>
+        <p class="hint">Choisis un degrade pour le fond de la page.</p>
+        <div class="bg-grid">${bgChips}</div>
+      </fieldset>
+      <fieldset>
+        <legend>Themes de couleur</legend>
+        <p class="hint">Applique un theme predefini ou personnalise tes couleurs en dessous.</p>
+        <div class="theme-grid">${themeChips}</div>
+      </fieldset>
+      <fieldset>
+        <legend>Couleurs personnalisees</legend>
+        <label>Couleur principale</label><div class="color-row"><input type="color" data-pick="c_rose" value="${esc(d.c_rose||"#2D7FF9")}"><input type="text" data-field="c_rose" value="${esc(d.c_rose||"#2D7FF9")}"></div>
+        <label>Couleur foncee</label><div class="color-row"><input type="color" data-pick="c_deep" value="${esc(d.c_deep||"#1A6BE0")}"><input type="text" data-field="c_deep" value="${esc(d.c_deep||"#1A6BE0")}"></div>
+        <label>Texte</label><div class="color-row"><input type="color" data-pick="c_ink" value="${esc(d.c_ink||"#1D1D1E")}"><input type="text" data-field="c_ink" value="${esc(d.c_ink||"#1D1D1E")}"></div>
+        <label>Texte secondaire</label><div class="color-row"><input type="color" data-pick="c_inksoft" value="${esc(d.c_inksoft||"#808084")}"><input type="text" data-field="c_inksoft" value="${esc(d.c_inksoft||"#808084")}"></div>
+      </fieldset>
+      <fieldset>
+        <legend>SEO</legend>
+        <label>Titre de l'onglet</label><input type="text" data-field="title" value="${esc(d.title||"")}">
+      </fieldset>
+    `;
+  } else if (tab === "platform") {
+    area.innerHTML = `
+      <fieldset>
+        <legend>Source de trafic principale</legend>
+        <p class="hint">Configure le comportement special pour le reseau d'ou viennent tes visiteurs.</p>
+        <div class="seg">
+          <label><input type="radio" name="platform" value="auto" data-field="platform" ${(d.platform||"auto")==="auto"?"checked":""}><span class="opt">Auto</span></label>
+          <label><input type="radio" name="platform" value="tiktok" data-field="platform" ${d.platform==="tiktok"?"checked":""}><span class="opt">TikTok</span></label>
+          <label><input type="radio" name="platform" value="instagram" data-field="platform" ${d.platform==="instagram"?"checked":""}><span class="opt">Instagram</span></label>
+          <label><input type="radio" name="platform" value="snapchat" data-field="platform" ${d.platform==="snapchat"?"checked":""}><span class="opt">Snapchat</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Ecran 18+ TikTok</legend>
+        <div class="toggle-row">
+          <input type="checkbox" data-field="tiktok_overlay" ${d.tiktok_overlay?"checked":""} id="cb_tt">
+          <label for="cb_tt">Activer l'ecran 18+ uniquement pour les visiteurs TikTok</label>
+        </div>
+        <p class="hint">Quand active : si un visiteur arrive depuis TikTok, il verra un ecran 18+ qui le force a appuyer longtemps pour ouvrir le lien dans son vrai navigateur.</p>
+        <label>Titre de l'ecran</label><input type="text" data-field="tiktok_title" value="${esc(d.tiktok_title||"Continuer vers mon contenu")}">
+        <label>Sous-titre</label><textarea data-field="tiktok_subtitle">${esc(d.tiktok_subtitle||"Pour acceder au lien, ouvre la page dans ton navigateur.")}</textarea>
+        <label>Texte du bouton</label><input type="text" data-field="tiktok_button" value="${esc(d.tiktok_button||"APPUI LONG POUR OUVRIR")}">
+      </fieldset>
+    `;
+  } else if (tab === "settings") {
+    area.innerHTML = `
+      <fieldset>
+        <legend>Apercu public</legend>
+        <p class="hint">URL publique : <a href="/${esc(p.slug)}" target="_blank" style="color:var(--accent)">sophiemercier.fr/${esc(p.slug)}</a></p>
+        <p class="hint">Lien de redirection masque : <code>/go/${esc(p.slug)}</code></p>
+      </fieldset>
+    `;
   }
 
-  async function deleteLink(id){
-    await sb.from('page_links').delete().eq('id',id);
-    setLinks(prev=>prev.filter(l=>l.id!==id));
-  }
-  async function toggleLink(id,enabled){
-    await sb.from('page_links').update({enabled}).eq('id',id);
-    setLinks(prev=>prev.map(l=>l.id===id?{...l,enabled}:l));
-  }
-  async function saveLink(lk){
-    if(lk.id){
-      await sb.from('page_links').update({title:lk.title,url:lk.url,username:lk.username,icon:lk.icon}).eq('id',lk.id);
-      setLinks(prev=>prev.map(l=>l.id===lk.id?{...l,...lk}:l));
-    }else{
-      const {data}=await sb.from('page_links').insert({page_id:pg.id,title:lk.title,url:lk.url,username:lk.username||'',icon:lk.icon||null,position:links.length,enabled:true}).select().single();
-      if(data)setLinks(prev=>[...prev,data]);
+  bindInputs(area);
+}
+
+function bindInputs(area) {
+  area.querySelectorAll("[data-field]").forEach(el => {
+    el.addEventListener("input", () => {
+      const key = el.dataset.field;
+      const val = el.type === "checkbox" ? el.checked : (el.type === "radio" ? el.value : el.value);
+      const p = currentPage(); if (!p) return;
+      p.data = { ...(p.data||{}), [key]: val };
+      const pick = area.querySelector('[data-pick="'+key+'"]');
+      if (pick && el.type === "text" && /^#[0-9a-f]{6}$/i.test(val)) pick.value = val;
+      scheduleSave(); updatePreview();
+    });
+  });
+  area.querySelectorAll("[data-pick]").forEach(el => {
+    el.addEventListener("input", () => {
+      const key = el.dataset.pick;
+      const val = el.value;
+      const p = currentPage(); p.data = { ...(p.data||{}), [key]: val };
+      const txt = area.querySelector('[data-field="'+key+'"]'); if (txt) txt.value = val;
+      scheduleSave(); updatePreview();
+    });
+  });
+  const slugInp = area.querySelector("[data-slug]");
+  if (slugInp) slugInp.addEventListener("change", async e => {
+    const newSlug = slugify(e.target.value);
+    const p = currentPage();
+    if (!newSlug) { e.target.value = p.slug; return; }
+    if (newSlug === p.slug) return;
+    p.slug = newSlug; e.target.value = newSlug;
+    const h = document.getElementById("hint_slug"); if (h) h.textContent = newSlug;
+    clearTimeout(drawerSaveTimer);
+    await saveNow();
+  });
+  // Card style picker
+  area.querySelectorAll(".cstyle-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const id = chip.dataset.style;
+      const p = currentPage(); if (!p) return;
+      p.data = { ...(p.data||{}), card_style: id };
+      area.querySelectorAll(".cstyle-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      scheduleSave(); updatePreview();
+    });
+  });
+  // Background presets
+  area.querySelectorAll(".bg-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const id = chip.dataset.bg;
+      const p = currentPage(); if (!p) return;
+      p.data = { ...(p.data||{}), bg_style: id };
+      area.querySelectorAll(".bg-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      scheduleSave(); updatePreview();
+    });
+  });
+  // Theme presets
+  area.querySelectorAll(".theme-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const t = THEMES.find(x => x.id === chip.dataset.theme); if (!t) return;
+      const p = currentPage(); if (!p) return;
+      p.data = { ...(p.data||{}), c_rose: t.rose, c_deep: t.deep, c_ink: t.ink, c_inksoft: t.inksoft };
+      const set = (k, v) => {
+        const txt = area.querySelector('[data-field="'+k+'"]');
+        const pick = area.querySelector('[data-pick="'+k+'"]');
+        if (txt) txt.value = v; if (pick) pick.value = v;
+      };
+      set("c_rose",t.rose);set("c_deep",t.deep);set("c_ink",t.ink);set("c_inksoft",t.inksoft);
+      area.querySelectorAll(".theme-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      scheduleSave(); updatePreview();
+    });
+    const t = THEMES.find(x => x.id === chip.dataset.theme);
+    const p = currentPage(); const dd = p?.data || {};
+    if (t && dd.c_rose===t.rose && dd.c_deep===t.deep && dd.c_ink===t.ink && dd.c_inksoft===t.inksoft) chip.classList.add("active");
+  });
+}
+
+function scheduleSave() {
+  setSaveStatus("Modification en attente...","saving");
+  clearTimeout(drawerSaveTimer);
+  drawerSaveTimer = setTimeout(saveNow, 600);
+}
+
+async function saveNow() {
+  const p = currentPage(); if (!p) return;
+  setSaveStatus("Sauvegarde...","saving");
+  if (p.data?.url) {
+    const normalized = normalizeUrl(p.data.url);
+    if (normalized !== p.data.url) {
+      p.data.url = normalized;
+      const inp = document.querySelector('[data-field="url"]');
+      if (inp) inp.value = normalized;
     }
-    setLinkModal(null);
   }
-
-  const labelStyle={display:'block',fontSize:12,fontWeight:500,color:'var(--fg-muted)',marginBottom:4,marginTop:14};
-  const inputStyle={width:'100%',height:36,padding:'0 12px',border:'1px solid var(--border-strong)',borderRadius:8,fontSize:14,fontFamily:'inherit',outline:'none',background:'#fff'};
-  const tabs=[{k:'content',l:'Contenu'},{k:'links',l:'Liens'},{k:'design',l:'Apparence'},{k:'platform',l:'Plateformes'}];
-
-  return(
-    <div style={{position:'fixed',inset:0,zIndex:50,display:'flex'}}>
-      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.35)'}}></div>
-      <div style={{position:'absolute',right:0,top:0,bottom:0,width:480,maxWidth:'100vw',background:'#fff',borderLeft:'1px solid var(--border)',boxShadow:'var(--shadow-lg)',display:'flex',flexDirection:'column',zIndex:51}}>
-        {/* Header */}
-        <div style={{padding:'16px 20px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div>
-            <div style={{fontSize:15,fontWeight:600}}>/{pg.slug}</div>
-            <div style={{fontSize:12,color:'var(--fg-muted)',marginTop:2}}>{d.name||d.title||pg.slug}</div>
-          </div>
-          <button onClick={onClose} style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',fontSize:18,display:'grid',placeItems:'center',color:'var(--fg-muted)'}}>×</button>
-        </div>
-        {/* Tabs */}
-        <div style={{display:'flex',gap:0,borderBottom:'1px solid var(--border)',padding:'0 20px'}}>
-          {tabs.map(t=>(
-            <button key={t.k} onClick={()=>setTab(t.k)} style={{padding:'10px 14px',fontSize:13,fontWeight:tab===t.k?600:500,color:tab===t.k?'var(--accent)':'var(--fg-muted)',borderBottom:tab===t.k?'2px solid var(--accent)':'2px solid transparent',background:'none',border:'none',borderBottomWidth:2,borderBottomStyle:'solid',borderBottomColor:tab===t.k?'var(--accent)':'transparent',cursor:'pointer',fontFamily:'inherit'}}>{t.l}</button>
-          ))}
-        </div>
-        {/* Content */}
-        <div style={{flex:1,overflowY:'auto',padding:'8px 20px 30px'}}>
-
-          {tab==='content'&&<div>
-            <label style={labelStyle}>Slug (URL)</label>
-            <div style={{display:'flex',alignItems:'center'}}>
-              <span style={{padding:'0 10px',height:36,display:'flex',alignItems:'center',background:'var(--bg-muted)',border:'1px solid var(--border-strong)',borderRight:'none',borderRadius:'8px 0 0 8px',fontSize:12,color:'var(--fg-subtle)',whiteSpace:'nowrap'}}>sophiemercier.fr/</span>
-              <input value={pg.slug} onChange={e=>updateSlug(e.target.value)} style={{...inputStyle,borderRadius:'0 8px 8px 0'}}/>
-            </div>
-            <label style={labelStyle}>Nom</label>
-            <input value={d.name||''} onChange={e=>updateField('name',e.target.value)} placeholder="Ma page" style={inputStyle}/>
-            <label style={labelStyle}>Handle</label>
-            <input value={d.handle||''} onChange={e=>updateField('handle',e.target.value)} placeholder="@sophie" style={inputStyle}/>
-            <label style={labelStyle}>Sous-titre</label>
-            <input value={d.sub||''} onChange={e=>updateField('sub',e.target.value)} placeholder="23 ans..." style={inputStyle}/>
-            <label style={labelStyle}>Tag</label>
-            <input value={d.tag||''} onChange={e=>updateField('tag',e.target.value)} placeholder="EXCLU" style={inputStyle}/>
-            <label style={labelStyle}>Titre carte</label>
-            <input value={d.card_title||''} onChange={e=>updateField('card_title',e.target.value)} style={inputStyle}/>
-            <label style={labelStyle}>Description carte</label>
-            <textarea value={d.card_desc||''} onChange={e=>updateField('card_desc',e.target.value)} rows={3} style={{...inputStyle,height:'auto',padding:'10px 12px',resize:'vertical'}}/>
-            <label style={labelStyle}>Texte du bouton</label>
-            <input value={d.cta||''} onChange={e=>updateField('cta',e.target.value)} placeholder="Accéder" style={inputStyle}/>
-            <label style={labelStyle}>URL de destination</label>
-            <input value={d.url||''} onChange={e=>updateField('url',e.target.value)} placeholder="https://t.me/..." style={inputStyle}/>
-            <div style={{marginTop:6,fontSize:12,color:'var(--fg-subtle)'}}>Lien masqué : sophiemercier.fr/go/{pg.slug}</div>
-            <label style={labelStyle}>Signature</label>
-            <input value={d.kiss||''} onChange={e=>updateField('kiss',e.target.value)} style={inputStyle}/>
-            <div style={{marginTop:16,display:'flex',alignItems:'center',gap:10}}>
-              <input type="checkbox" checked={!!d.verified} onChange={e=>updateField('verified',e.target.checked)} id="ck_v"/>
-              <label htmlFor="ck_v" style={{fontSize:13,cursor:'pointer'}}>Badge vérifié</label>
-            </div>
-            <div style={{marginTop:10,display:'flex',alignItems:'center',gap:10}}>
-              <input type="checkbox" checked={!!d.chip_online} onChange={e=>updateField('chip_online',e.target.checked)} id="ck_o"/>
-              <label htmlFor="ck_o" style={{fontSize:13,cursor:'pointer'}}>Pastille "En ligne"</label>
-            </div>
-            <div style={{marginTop:10,display:'flex',alignItems:'center',gap:10}}>
-              <input type="checkbox" checked={!!d.chip_location} onChange={e=>updateField('chip_location',e.target.checked)} id="ck_l"/>
-              <label htmlFor="ck_l" style={{fontSize:13,cursor:'pointer'}}>Pastille localisation</label>
-            </div>
-          </div>}
-
-          {tab==='links'&&<div>
-            <div style={{marginTop:10,marginBottom:14,fontSize:13,color:'var(--fg-muted)'}}>Boutons additionnels sur ta page (Telegram, Insta, Snap...)</div>
-            {links.map(lk=>(
-              <div key={lk.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:10,marginBottom:8,background:lk.enabled?'#fff':'var(--bg-muted)'}}>
-                <span style={{fontSize:18,flexShrink:0}}>{lk.icon||autoIcon(lk.url)}</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lk.title}</div>
-                  <div style={{fontSize:11,color:'var(--fg-subtle)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lk.url}</div>
-                </div>
-                <button onClick={()=>toggleLink(lk.id,!lk.enabled)} title={lk.enabled?'Désactiver':'Activer'} style={{width:28,height:28,borderRadius:6,border:'1px solid var(--border)',background:lk.enabled?'var(--success-soft)':'var(--bg-muted)',cursor:'pointer',display:'grid',placeItems:'center',color:lk.enabled?'var(--success)':'var(--fg-subtle)',fontSize:12}}>{lk.enabled?'✓':'✗'}</button>
-                <button onClick={()=>setLinkModal({editing:lk})} title="Éditer" style={{width:28,height:28,borderRadius:6,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="pencil" style={{width:13,height:13}}></i></button>
-                <button onClick={()=>deleteLink(lk.id)} title="Supprimer" style={{width:28,height:28,borderRadius:6,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--danger)'}}><i data-lucide="trash-2" style={{width:13,height:13}}></i></button>
-              </div>
-            ))}
-            {links.length===0&&<div style={{padding:20,textAlign:'center',color:'var(--fg-subtle)',border:'1px dashed var(--border)',borderRadius:10}}>Aucun lien. Ajoute ton premier !</div>}
-            <button onClick={()=>setLinkModal({editing:null})} style={{marginTop:10,display:'inline-flex',alignItems:'center',gap:6,height:36,padding:'0 16px',borderRadius:8,border:'none',background:'var(--accent)',color:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:600}}><i data-lucide="plus" style={{width:15,height:15}}></i> Ajouter un lien</button>
-
-            {linkModal&&<LinkEditModal link={linkModal.editing} onClose={()=>setLinkModal(null)} onSave={saveLink}/>}
-          </div>}
-
-          {tab==='design'&&<div>
-            <label style={labelStyle}>Thème</label>
-            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
-              {THEMES.map(t=>(
-                <button key={t.id} onClick={()=>updateField('theme',t.id)} style={{width:48,height:48,borderRadius:10,background:t.color,border:(d.theme||'rose')===t.id?'3px solid var(--accent)':'3px solid transparent',cursor:'pointer',position:'relative'}}>
-                  {(d.theme||'rose')===t.id&&<span style={{position:'absolute',inset:0,display:'grid',placeItems:'center',color:'#fff',fontSize:18,fontWeight:700}}>✓</span>}
-                </button>
-              ))}
-            </div>
-            <div style={{marginTop:8,fontSize:12,color:'var(--fg-subtle)'}}>{THEMES.find(t=>t.id===(d.theme||'rose'))?.name||'Rose'}</div>
-          </div>}
-
-          {tab==='platform'&&<div>
-            <div style={{marginTop:14,display:'flex',alignItems:'center',gap:10}}>
-              <input type="checkbox" checked={!!d.tiktok_overlay} onChange={e=>updateField('tiktok_overlay',e.target.checked)} id="ck_tt"/>
-              <label htmlFor="ck_tt" style={{fontSize:13,cursor:'pointer'}}>Écran 18+ (in-app browsers : TikTok, Snap, Insta, Facebook)</label>
-            </div>
-            <div style={{fontSize:12,color:'var(--fg-subtle)',marginTop:6,marginLeft:28}}>Oblige les visiteurs venant d'un navigateur in-app à confirmer 18+ avant de voir la page.</div>
-            <div style={{marginTop:18,display:'flex',alignItems:'center',gap:10}}>
-              <input type="checkbox" checked={!!d.hide_from_search} onChange={e=>updateField('hide_from_search',e.target.checked)} id="ck_hs"/>
-              <label htmlFor="ck_hs" style={{fontSize:13,cursor:'pointer'}}>Masquer des moteurs de recherche</label>
-            </div>
-          </div>}
-
-        </div>
-      </div>
-    </div>
-  );
+  const {error} = await sb.from("landing_pages").update({
+    slug: p.slug, data: p.data, photo_path: p.photo_path, folder_id: p.folder_id
+  }).eq("id", p.id);
+  if (error) { setSaveStatus("Erreur: "+error.message); return; }
+  setSaveStatus("Sauvegarde ✓","saved");
 }
 
-function LinkEditModal({link,onClose,onSave}){
-  const editing=!!link;
-  const [title,setTitle]=useState(link?.title||'');const [url,setUrl]=useState(link?.url||'');
-  const [username,setUsername]=useState(link?.username||'');const [ic,setIc]=useState(link?.icon||'');
-  const labelStyle={display:'block',fontSize:12,fontWeight:500,color:'var(--fg-muted)',marginBottom:4,marginTop:14};
-  const inputStyle={width:'100%',height:36,padding:'0 12px',border:'1px solid var(--border-strong)',borderRadius:8,fontSize:14,fontFamily:'inherit',outline:'none'};
-  function submit(e){e.preventDefault();if(!title.trim()||!url.trim())return;onSave({...(link||{}),title:title.trim(),url:url.trim(),username:username.trim(),icon:ic.trim()||null})}
-  return(
-    <div style={{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
-      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.4)',zIndex:200}}></div>
-      <div onClick={e=>e.stopPropagation()} style={{position:'relative',zIndex:201,background:'#fff',borderRadius:14,padding:24,width:400,maxWidth:'90vw',boxShadow:'var(--shadow-lg)'}}>
-        <h3 style={{fontSize:16,fontWeight:600,marginBottom:4}}>{editing?'Modifier le lien':'Nouveau lien'}</h3>
-        <form onSubmit={submit}>
-          <label style={labelStyle}>Titre du bouton</label>
-          <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Mon Telegram" style={inputStyle} autoFocus/>
-          <label style={labelStyle}>URL</label>
-          <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://t.me/..." style={inputStyle}/>
-          <label style={labelStyle}>Username (interne)</label>
-          <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="@sophie_xxx" style={inputStyle}/>
-          <div style={{fontSize:11,color:'var(--fg-subtle)',marginTop:4}}>Jamais affiché publiquement, juste pour ton orga.</div>
-          <label style={labelStyle}>Icône (emoji, optionnel)</label>
-          <input value={ic} onChange={e=>setIc(e.target.value)} maxLength={4} placeholder="auto" style={{...inputStyle,width:80}}/>
-          <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:18}}>
-            <button type="button" onClick={onClose} style={{height:36,padding:'0 16px',borderRadius:8,border:'1px solid var(--border-strong)',background:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:500}}>Annuler</button>
-            <button type="submit" style={{height:36,padding:'0 18px',borderRadius:8,border:'none',background:'var(--accent)',color:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:600}}>{editing?'Enregistrer':'Créer'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+function setSaveStatus(text, cls) {
+  const el = document.getElementById("save_status");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "status"+(cls?" "+cls:"");
 }
 
+function updatePreview() {
+  const p = currentPage(); if (!p) return;
+  const iframe = document.getElementById("preview");
+  if (!iframe) return;
+  const d = p.data || {};
+  const enabledLinks = (p._links||[]).filter(l => l.enabled);
+  // Build a simple preview
+  const linksHtml = enabledLinks.map(l => `<a href="#" style="display:block;margin:6px 0;padding:12px 16px;background:rgba(255,255,255,.9);border-radius:12px;text-decoration:none;color:inherit;font-weight:600;font-size:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.1)">${esc(l.icon||iconFor(l.url))} ${esc(l.title)}</a>`).join("");
+  iframe.srcdoc = `<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;background:${BACKGROUNDS.find(b=>b.id===(d.bg_style||"rose"))?.bg||"#e8f0fe"};color:${d.c_ink||"#1D1D1E"}}</style>
+</head><body>
+<div style="text-align:center;margin-bottom:20px">
+  <div style="width:72px;height:72px;border-radius:50%;background:${d.c_rose||"#2D7FF9"};margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;font-weight:700">${esc((d.name||p.slug||"?")[0].toUpperCase())}</div>
+  <div style="font-size:16px;font-weight:700">${esc(d.name||p.slug)}</div>
+  <div style="font-size:13px;color:${d.c_inksoft||"#808084"};margin-top:2px">${esc(d.handle||"")}</div>
+  <div style="font-size:12px;color:${d.c_inksoft||"#808084"};margin-top:4px">${esc(d.sub||"")}</div>
+</div>
+<div style="width:100%;max-width:340px">
+  <div style="background:rgba(255,255,255,.95);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+    ${d.tag?`<div style="display:inline-block;padding:3px 10px;border-radius:6px;background:${d.c_rose||"#2D7FF9"};color:#fff;font-size:11px;font-weight:600;margin-bottom:8px">${esc(d.tag)}</div>`:""}
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">${esc(d.card_title||"")}</div>
+    <div style="font-size:12px;color:${d.c_inksoft||"#808084"};margin-bottom:10px">${esc(d.card_desc||"")}</div>
+    <div style="background:${d.c_rose||"#2D7FF9"};color:#fff;padding:10px;border-radius:10px;text-align:center;font-weight:600;font-size:14px">${esc(d.cta||"Ouvrir le lien")}</div>
+  </div>
+  ${linksHtml}
+</div>
+${d.kiss?`<div style="margin-top:20px;font-size:11px;color:${d.c_inksoft||"#808084"}">${esc(d.kiss)}</div>`:""}
+</body></html>`;
+}
+
+// --- Links edit list
+function renderLinksEditList() {
+  const list = document.getElementById("links_list"); if (!list) return;
+  const p = currentPage(); if (!p) return;
+  const links = p._links || [];
+  if (!links.length) {
+    list.innerHTML = '<div class="link-edit-empty">Aucun lien additionnel. Clique <strong>+ Ajouter un lien</strong> pour en creer un.</div>';
+    return;
+  }
+  list.innerHTML = links.map((l, idx) => `
+    <div class="link-edit-row" data-id="${esc(l.id)}">
+      <div class="link-edit-handle" title="Glisser pour reordonner">&#8286;&#8286;</div>
+      <div class="link-edit-icon">${esc(l.icon || iconFor(l.url))}</div>
+      <div class="link-edit-meta">
+        <div class="link-edit-title">${esc(l.title)} ${l.enabled?"":'<span class="link-edit-off">desactive</span>'}</div>
+        <div class="link-edit-sub">${l.username ? '<span class="link-edit-user">@'+esc(l.username.replace(/^@/,""))+'</span> · ' : ""}${esc(l.url)}</div>
+      </div>
+      <button class="link-edit-btn" data-act="up" ${idx===0?"disabled":""} title="Monter">&#x25B2;</button>
+      <button class="link-edit-btn" data-act="down" ${idx===links.length-1?"disabled":""} title="Descendre">&#x25BC;</button>
+      <button class="link-edit-btn" data-act="edit" title="Modifier">&#9998;</button>
+      <button class="link-edit-btn" data-act="toggle" title="${l.enabled?"Desactiver":"Activer"}">${l.enabled?"&#x1F441;":"&#x1F6AB;"}</button>
+      <button class="link-edit-btn danger" data-act="delete" title="Supprimer">&#x1F5D1;</button>
+    </div>
+  `).join("");
+  list.querySelectorAll(".link-edit-row").forEach(row => {
+    const id = row.dataset.id;
+    row.querySelectorAll("[data-act]").forEach(btn => {
+      btn.addEventListener("click", e => { e.stopPropagation(); onLinkAction(btn.dataset.act, id); });
+    });
+  });
+}
+
+async function onLinkAction(action, id) {
+  const p = currentPage(); if (!p) return;
+  const links = p._links || [];
+  const idx = links.findIndex(l => l.id === id);
+  if (idx < 0) return;
+  const link = links[idx];
+
+  if (action === "edit") return openLinkModal(link);
+  if (action === "delete") {
+    if (!confirm('Supprimer le lien "'+link.title+'" ?')) return;
+    await sb.from("page_links").delete().eq("id", id);
+    p._links = links.filter(l => l.id !== id);
+    renderLinksEditList(); updatePreview();
+    return;
+  }
+  if (action === "toggle") {
+    const newVal = !link.enabled;
+    await sb.from("page_links").update({enabled: newVal}).eq("id", id);
+    link.enabled = newVal;
+    renderLinksEditList(); updatePreview();
+    return;
+  }
+  if (action === "up" || action === "down") {
+    const swapIdx = action === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= links.length) return;
+    const other = links[swapIdx];
+    const linkPos = link.position, otherPos = other.position;
+    await Promise.all([
+      sb.from("page_links").update({position: otherPos}).eq("id", link.id),
+      sb.from("page_links").update({position: linkPos}).eq("id", other.id)
+    ]);
+    link.position = otherPos; other.position = linkPos;
+    p._links = [...links].sort((a,b) => a.position - b.position);
+    renderLinksEditList(); updatePreview();
+    return;
+  }
+}
+
+function openLinkModal(link) {
+  const editing = !!link;
+  document.querySelectorAll(".modal-overlay").forEach(x=>x.remove());
+  const overlay = document.createElement("div"); overlay.className = "modal-overlay";
+  const modal = document.createElement("div"); modal.className = "modal";
+  modal.innerHTML = `
+    <h3>${editing ? "Modifier le lien" : "Nouveau lien"}</h3>
+    <label>Titre du bouton</label>
+    <input type="text" id="ml_title" placeholder="Ex: Mon Telegram" value="${editing?esc(link.title):""}">
+    <label>URL</label>
+    <input type="url" id="ml_url" placeholder="https://t.me/..." value="${editing?esc(link.url):""}">
+    <label>Username du compte (interne, pour l'orga)</label>
+    <input type="text" id="ml_username" placeholder="@sophie_xxx" value="${editing?esc(link.username||""):""}">
+    <p class="hint">Le username n'apparait jamais sur la landing publique.</p>
+    <label>Icone (1 emoji, optionnel)</label>
+    <input type="text" id="ml_icon" maxlength="4" placeholder="auto" value="${editing?esc(link.icon||""):""}">
+    <p class="hint">Laisse vide pour detection auto (Telegram = plane, Insta = camera, etc.)</p>
+    <div class="modal-btns">
+      <button class="btn" id="ml_cancel">Annuler</button>
+      <button class="btn btn-primary" id="ml_submit">${editing ? "Enregistrer" : "Creer"}</button>
+    </div>
+  `;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  document.getElementById("ml_cancel").addEventListener("click", () => overlay.remove());
+  document.getElementById("ml_title").focus();
+  document.getElementById("ml_submit").addEventListener("click", async () => {
+    const title = document.getElementById("ml_title").value.trim();
+    let url = document.getElementById("ml_url").value.trim();
+    const username = document.getElementById("ml_username").value.trim();
+    const icon = document.getElementById("ml_icon").value.trim() || null;
+    if (!title || !url) return;
+    url = normalizeUrl(url);
+    const p = currentPage();
+    if (editing) {
+      const {error} = await sb.from("page_links").update({title, url, username, icon}).eq("id", link.id);
+      if (error) { toast(error.message); return; }
+      Object.assign(link, {title, url, username, icon});
+    } else {
+      const pos = (p._links||[]).length;
+      const {data:row, error} = await sb.from("page_links").insert({
+        page_id: p.id, title, url, username, icon, position: pos, enabled: true
+      }).select().single();
+      if (error) { toast(error.message); return; }
+      p._links = [...(p._links||[]), row];
+    }
+    overlay.remove();
+    renderLinksEditList(); updatePreview();
+    toast(editing ? "Lien modifie" : "Lien ajoute");
+  });
+}
+
+async function onDeleteCurrentPage() {
+  const p = currentPage(); if (!p) return;
+  if (!confirm('Supprimer la page "'+p.slug+'" definitivement ?')) return;
+  await sb.from("landing_pages").delete().eq("id", p.id);
+  closePageDrawer();
+  toast("Page supprimee");
+  // Reload the page list
+  setTimeout(() => window.location.reload(), 500);
+}
 // ============================================================ APP
 function TopBar({title,subtitle,back}){
   return(
@@ -755,12 +1145,10 @@ function TopBar({title,subtitle,back}){
 
 function App(){
   const [view,setView]=useState('overview');const [page,setPage]=useState(null);const [period,setPeriod]=useState('7j');
-  const [editPage,setEditPage]=useState(null);
   useEffect(()=>{if(window.lucide)lucide.createIcons()});
   function openPage(p){setPage(p);setView('detail');window.scrollTo(0,0)}
   function back(){setView('overview');setPage(null)}
-  function openEdit(p){setEditPage(p)}
-  function closeEdit(){setEditPage(null)}
+  function openEdit(p){openPageDrawer(p)}
   let title,subtitle,backFn=null,screen;
   if(view==='detail'&&page){title=page.data?.title||page.slug;subtitle='Analytics de la page';backFn=back;screen=<PageDetail page={page} period={period} setPeriod={setPeriod}/>}
   else{title='Mes pages';subtitle='Suivi des clics sur vos pages';screen=<LinksOverview period={period} setPeriod={setPeriod} onOpen={openPage} onEdit={openEdit}/>}
@@ -768,7 +1156,6 @@ function App(){
     <div style={{minHeight:'100vh',maxWidth:1320,margin:'0 auto'}}>
       <TopBar title={title} subtitle={subtitle} back={backFn}/>
       {screen}
-      {editPage&&<EditDrawer page={editPage} onClose={closeEdit} onUpdated={p=>{setEditPage(p)}}/>}
     </div>
   );
 }
