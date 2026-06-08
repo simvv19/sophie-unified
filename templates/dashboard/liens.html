@@ -333,7 +333,7 @@ function NewPageModal({onClose,onCreated}){
     setSaving(true);setErr('');
     const {data,error}=await sb.from('landing_pages').insert({owner_id:'7c00387c-d55f-4952-a14c-5d8d14029e5c',slug:slug.trim(),data:{name:name.trim()||slug.trim(),title:name.trim()||slug.trim(),url:url.trim()||null}}).select().single();
     if(error){setErr(error.message);setSaving(false);return}
-    window.location.href='/landing/edit#page='+data.id;
+    onCreated(data);
   }
   return(
     <div style={{position:'fixed',inset:0,zIndex:100,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
@@ -365,12 +365,12 @@ function NewPageModal({onClose,onCreated}){
 }
 
 // ============================================================ OVERVIEW
-function LinksOverview({period,setPeriod,onOpen}){
+function LinksOverview({period,setPeriod,onOpen,onEdit}){
   const [visits,setVisits]=useState([]);const [pages,setPages]=useState([]);const [loading,setLoading]=useState(true);
   const [showNew,setShowNew]=useState(false);
   useEffect(()=>{setLoading(true);Promise.all([fetchVisits(period),fetchPages()]).then(([v,p])=>{setVisits(v);setPages(p);setLoading(false)})},[period]);
   useEffect(()=>{if(window.lucide)lucide.createIcons()});
-  function onCreated(pg){setPages(prev=>[...prev,pg])}
+  function onCreated(pg){setPages(prev=>[...prev,pg]);setShowNew(false);if(onEdit)onEdit(pg)}
 
   const views=visits.filter(v=>v.type==='view');const clicks=visits.filter(v=>v.type==='click');
   const convRate=views.length?clicks.length/views.length:0;
@@ -435,7 +435,7 @@ function LinksOverview({period,setPeriod,onOpen}){
                 <td style={{padding:'13px 20px',textAlign:'right',fontFamily:'var(--font-mono)',color:'var(--fg-muted)'}}>{fmt(r.views)}</td>
                 <td style={{padding:'13px 20px',textAlign:'right',fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums'}}>{(Math.round(r.rate*1000)/10).toString().replace('.',',')}{' '}%</td>
                 <td style={{padding:'13px 20px'}}>{r.topCountry?<span style={{color:'var(--fg-muted)'}}>{r.topCountry.key}</span>:<span style={{color:'var(--fg-subtle)'}}>—</span>}</td>
-                <td style={{padding:'13px 20px',textAlign:'right'}}><div style={{display:'flex',gap:6,justifyContent:'flex-end'}}><button onClick={()=>window.location.href='/landing/edit#page='+r.page.id} title="Éditer" style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="pencil" style={{width:14,height:14}}></i></button><button onClick={()=>onOpen(r.page)} title="Stats" style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="bar-chart-2" style={{width:14,height:14}}></i></button></div></td>
+                <td style={{padding:'13px 20px',textAlign:'right'}}><div style={{display:'flex',gap:6,justifyContent:'flex-end'}}><button onClick={()=>onEdit(r.page)} title="Éditer" style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="pencil" style={{width:14,height:14}}></i></button><button onClick={()=>onOpen(r.page)} title="Stats" style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="bar-chart-2" style={{width:14,height:14}}></i></button></div></td>
               </tr>
             ))}
             {rows.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'var(--fg-subtle)'}}>Aucune donnee pour cette periode</td></tr>}
@@ -526,6 +526,220 @@ function PageDetail({page,period,setPeriod}){
   );
 }
 
+// ============================================================ EDIT DRAWER
+const THEMES=[
+  {id:'rose',name:'Rose',color:'#F9A8D4'},{id:'violet',name:'Violet',color:'#A78BFA'},
+  {id:'bleu',name:'Bleu Nuit',color:'#60A5FA'},{id:'vert',name:'Vert',color:'#6EE7B7'},
+  {id:'orange',name:'Orange',color:'#FDBA74'},{id:'noir',name:'Noir',color:'#1F1D18'},
+];
+
+function autoIcon(url){
+  if(!url)return '';
+  if(/t\.me|telegram/i.test(url))return '✈️';
+  if(/instagram/i.test(url))return '📸';
+  if(/snapchat/i.test(url))return '👻';
+  if(/tiktok/i.test(url))return '🎵';
+  if(/twitter|x\.com/i.test(url))return '🐦';
+  if(/onlyfans/i.test(url))return '🔥';
+  return '🔗';
+}
+
+function EditDrawer({page,onClose,onUpdated}){
+  const [tab,setTab]=useState('content');
+  const [pg,setPg]=useState(page);
+  const [d,setD]=useState(page.data||{});
+  const [links,setLinks]=useState([]);
+  const [saving,setSaving]=useState(false);
+  const [linkModal,setLinkModal]=useState(null); // null | {editing:link} | {editing:null}
+  const saveTimer=useRef(null);
+
+  useEffect(()=>{
+    sb.from('page_links').select('*').eq('page_id',page.id).order('position',{ascending:true}).then(r=>setLinks(r.data||[]));
+  },[page.id]);
+  useEffect(()=>{if(window.lucide)setTimeout(()=>lucide.createIcons(),50)},[tab,links,linkModal]);
+
+  function updateField(key,val){
+    const nd={...d,[key]:val};setD(nd);
+    if(saveTimer.current)clearTimeout(saveTimer.current);
+    saveTimer.current=setTimeout(async()=>{
+      await sb.from('landing_pages').update({data:nd}).eq('id',pg.id);
+      if(onUpdated)onUpdated({...pg,data:nd});
+    },800);
+  }
+  function updateSlug(val){
+    const ns=val.replace(/[^a-z0-9-_]/gi,'');
+    setPg(p=>({...p,slug:ns}));
+    if(saveTimer.current)clearTimeout(saveTimer.current);
+    saveTimer.current=setTimeout(async()=>{
+      await sb.from('landing_pages').update({slug:ns}).eq('id',pg.id);
+    },800);
+  }
+
+  async function deleteLink(id){
+    await sb.from('page_links').delete().eq('id',id);
+    setLinks(prev=>prev.filter(l=>l.id!==id));
+  }
+  async function toggleLink(id,enabled){
+    await sb.from('page_links').update({enabled}).eq('id',id);
+    setLinks(prev=>prev.map(l=>l.id===id?{...l,enabled}:l));
+  }
+  async function saveLink(lk){
+    if(lk.id){
+      await sb.from('page_links').update({title:lk.title,url:lk.url,username:lk.username,icon:lk.icon}).eq('id',lk.id);
+      setLinks(prev=>prev.map(l=>l.id===lk.id?{...l,...lk}:l));
+    }else{
+      const {data}=await sb.from('page_links').insert({page_id:pg.id,title:lk.title,url:lk.url,username:lk.username||'',icon:lk.icon||null,position:links.length,enabled:true}).select().single();
+      if(data)setLinks(prev=>[...prev,data]);
+    }
+    setLinkModal(null);
+  }
+
+  const labelStyle={display:'block',fontSize:12,fontWeight:500,color:'var(--fg-muted)',marginBottom:4,marginTop:14};
+  const inputStyle={width:'100%',height:36,padding:'0 12px',border:'1px solid var(--border-strong)',borderRadius:8,fontSize:14,fontFamily:'inherit',outline:'none',background:'#fff'};
+  const tabs=[{k:'content',l:'Contenu'},{k:'links',l:'Liens'},{k:'design',l:'Apparence'},{k:'platform',l:'Plateformes'}];
+
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:50,display:'flex'}}>
+      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.35)'}}></div>
+      <div style={{position:'absolute',right:0,top:0,bottom:0,width:480,maxWidth:'100vw',background:'#fff',borderLeft:'1px solid var(--border)',boxShadow:'var(--shadow-lg)',display:'flex',flexDirection:'column',zIndex:51}}>
+        {/* Header */}
+        <div style={{padding:'16px 20px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontSize:15,fontWeight:600}}>/{pg.slug}</div>
+            <div style={{fontSize:12,color:'var(--fg-muted)',marginTop:2}}>{d.name||d.title||pg.slug}</div>
+          </div>
+          <button onClick={onClose} style={{width:30,height:30,borderRadius:7,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',fontSize:18,display:'grid',placeItems:'center',color:'var(--fg-muted)'}}>×</button>
+        </div>
+        {/* Tabs */}
+        <div style={{display:'flex',gap:0,borderBottom:'1px solid var(--border)',padding:'0 20px'}}>
+          {tabs.map(t=>(
+            <button key={t.k} onClick={()=>setTab(t.k)} style={{padding:'10px 14px',fontSize:13,fontWeight:tab===t.k?600:500,color:tab===t.k?'var(--accent)':'var(--fg-muted)',borderBottom:tab===t.k?'2px solid var(--accent)':'2px solid transparent',background:'none',border:'none',borderBottomWidth:2,borderBottomStyle:'solid',borderBottomColor:tab===t.k?'var(--accent)':'transparent',cursor:'pointer',fontFamily:'inherit'}}>{t.l}</button>
+          ))}
+        </div>
+        {/* Content */}
+        <div style={{flex:1,overflowY:'auto',padding:'8px 20px 30px'}}>
+
+          {tab==='content'&&<div>
+            <label style={labelStyle}>Slug (URL)</label>
+            <div style={{display:'flex',alignItems:'center'}}>
+              <span style={{padding:'0 10px',height:36,display:'flex',alignItems:'center',background:'var(--bg-muted)',border:'1px solid var(--border-strong)',borderRight:'none',borderRadius:'8px 0 0 8px',fontSize:12,color:'var(--fg-subtle)',whiteSpace:'nowrap'}}>sophiemercier.fr/</span>
+              <input value={pg.slug} onChange={e=>updateSlug(e.target.value)} style={{...inputStyle,borderRadius:'0 8px 8px 0'}}/>
+            </div>
+            <label style={labelStyle}>Nom</label>
+            <input value={d.name||''} onChange={e=>updateField('name',e.target.value)} placeholder="Ma page" style={inputStyle}/>
+            <label style={labelStyle}>Handle</label>
+            <input value={d.handle||''} onChange={e=>updateField('handle',e.target.value)} placeholder="@sophie" style={inputStyle}/>
+            <label style={labelStyle}>Sous-titre</label>
+            <input value={d.sub||''} onChange={e=>updateField('sub',e.target.value)} placeholder="23 ans..." style={inputStyle}/>
+            <label style={labelStyle}>Tag</label>
+            <input value={d.tag||''} onChange={e=>updateField('tag',e.target.value)} placeholder="EXCLU" style={inputStyle}/>
+            <label style={labelStyle}>Titre carte</label>
+            <input value={d.card_title||''} onChange={e=>updateField('card_title',e.target.value)} style={inputStyle}/>
+            <label style={labelStyle}>Description carte</label>
+            <textarea value={d.card_desc||''} onChange={e=>updateField('card_desc',e.target.value)} rows={3} style={{...inputStyle,height:'auto',padding:'10px 12px',resize:'vertical'}}/>
+            <label style={labelStyle}>Texte du bouton</label>
+            <input value={d.cta||''} onChange={e=>updateField('cta',e.target.value)} placeholder="Accéder" style={inputStyle}/>
+            <label style={labelStyle}>URL de destination</label>
+            <input value={d.url||''} onChange={e=>updateField('url',e.target.value)} placeholder="https://t.me/..." style={inputStyle}/>
+            <div style={{marginTop:6,fontSize:12,color:'var(--fg-subtle)'}}>Lien masqué : sophiemercier.fr/go/{pg.slug}</div>
+            <label style={labelStyle}>Signature</label>
+            <input value={d.kiss||''} onChange={e=>updateField('kiss',e.target.value)} style={inputStyle}/>
+            <div style={{marginTop:16,display:'flex',alignItems:'center',gap:10}}>
+              <input type="checkbox" checked={!!d.verified} onChange={e=>updateField('verified',e.target.checked)} id="ck_v"/>
+              <label htmlFor="ck_v" style={{fontSize:13,cursor:'pointer'}}>Badge vérifié</label>
+            </div>
+            <div style={{marginTop:10,display:'flex',alignItems:'center',gap:10}}>
+              <input type="checkbox" checked={!!d.chip_online} onChange={e=>updateField('chip_online',e.target.checked)} id="ck_o"/>
+              <label htmlFor="ck_o" style={{fontSize:13,cursor:'pointer'}}>Pastille "En ligne"</label>
+            </div>
+            <div style={{marginTop:10,display:'flex',alignItems:'center',gap:10}}>
+              <input type="checkbox" checked={!!d.chip_location} onChange={e=>updateField('chip_location',e.target.checked)} id="ck_l"/>
+              <label htmlFor="ck_l" style={{fontSize:13,cursor:'pointer'}}>Pastille localisation</label>
+            </div>
+          </div>}
+
+          {tab==='links'&&<div>
+            <div style={{marginTop:10,marginBottom:14,fontSize:13,color:'var(--fg-muted)'}}>Boutons additionnels sur ta page (Telegram, Insta, Snap...)</div>
+            {links.map(lk=>(
+              <div key={lk.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:10,marginBottom:8,background:lk.enabled?'#fff':'var(--bg-muted)'}}>
+                <span style={{fontSize:18,flexShrink:0}}>{lk.icon||autoIcon(lk.url)}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lk.title}</div>
+                  <div style={{fontSize:11,color:'var(--fg-subtle)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lk.url}</div>
+                </div>
+                <button onClick={()=>toggleLink(lk.id,!lk.enabled)} title={lk.enabled?'Désactiver':'Activer'} style={{width:28,height:28,borderRadius:6,border:'1px solid var(--border)',background:lk.enabled?'var(--success-soft)':'var(--bg-muted)',cursor:'pointer',display:'grid',placeItems:'center',color:lk.enabled?'var(--success)':'var(--fg-subtle)',fontSize:12}}>{lk.enabled?'✓':'✗'}</button>
+                <button onClick={()=>setLinkModal({editing:lk})} title="Éditer" style={{width:28,height:28,borderRadius:6,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--fg-muted)'}}><i data-lucide="pencil" style={{width:13,height:13}}></i></button>
+                <button onClick={()=>deleteLink(lk.id)} title="Supprimer" style={{width:28,height:28,borderRadius:6,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--danger)'}}><i data-lucide="trash-2" style={{width:13,height:13}}></i></button>
+              </div>
+            ))}
+            {links.length===0&&<div style={{padding:20,textAlign:'center',color:'var(--fg-subtle)',border:'1px dashed var(--border)',borderRadius:10}}>Aucun lien. Ajoute ton premier !</div>}
+            <button onClick={()=>setLinkModal({editing:null})} style={{marginTop:10,display:'inline-flex',alignItems:'center',gap:6,height:36,padding:'0 16px',borderRadius:8,border:'none',background:'var(--accent)',color:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:600}}><i data-lucide="plus" style={{width:15,height:15}}></i> Ajouter un lien</button>
+
+            {linkModal&&<LinkEditModal link={linkModal.editing} onClose={()=>setLinkModal(null)} onSave={saveLink}/>}
+          </div>}
+
+          {tab==='design'&&<div>
+            <label style={labelStyle}>Thème</label>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
+              {THEMES.map(t=>(
+                <button key={t.id} onClick={()=>updateField('theme',t.id)} style={{width:48,height:48,borderRadius:10,background:t.color,border:(d.theme||'rose')===t.id?'3px solid var(--accent)':'3px solid transparent',cursor:'pointer',position:'relative'}}>
+                  {(d.theme||'rose')===t.id&&<span style={{position:'absolute',inset:0,display:'grid',placeItems:'center',color:'#fff',fontSize:18,fontWeight:700}}>✓</span>}
+                </button>
+              ))}
+            </div>
+            <div style={{marginTop:8,fontSize:12,color:'var(--fg-subtle)'}}>{THEMES.find(t=>t.id===(d.theme||'rose'))?.name||'Rose'}</div>
+          </div>}
+
+          {tab==='platform'&&<div>
+            <div style={{marginTop:14,display:'flex',alignItems:'center',gap:10}}>
+              <input type="checkbox" checked={!!d.tiktok_overlay} onChange={e=>updateField('tiktok_overlay',e.target.checked)} id="ck_tt"/>
+              <label htmlFor="ck_tt" style={{fontSize:13,cursor:'pointer'}}>Écran 18+ (in-app browsers : TikTok, Snap, Insta, Facebook)</label>
+            </div>
+            <div style={{fontSize:12,color:'var(--fg-subtle)',marginTop:6,marginLeft:28}}>Oblige les visiteurs venant d'un navigateur in-app à confirmer 18+ avant de voir la page.</div>
+            <div style={{marginTop:18,display:'flex',alignItems:'center',gap:10}}>
+              <input type="checkbox" checked={!!d.hide_from_search} onChange={e=>updateField('hide_from_search',e.target.checked)} id="ck_hs"/>
+              <label htmlFor="ck_hs" style={{fontSize:13,cursor:'pointer'}}>Masquer des moteurs de recherche</label>
+            </div>
+          </div>}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinkEditModal({link,onClose,onSave}){
+  const editing=!!link;
+  const [title,setTitle]=useState(link?.title||'');const [url,setUrl]=useState(link?.url||'');
+  const [username,setUsername]=useState(link?.username||'');const [ic,setIc]=useState(link?.icon||'');
+  const labelStyle={display:'block',fontSize:12,fontWeight:500,color:'var(--fg-muted)',marginBottom:4,marginTop:14};
+  const inputStyle={width:'100%',height:36,padding:'0 12px',border:'1px solid var(--border-strong)',borderRadius:8,fontSize:14,fontFamily:'inherit',outline:'none'};
+  function submit(e){e.preventDefault();if(!title.trim()||!url.trim())return;onSave({...(link||{}),title:title.trim(),url:url.trim(),username:username.trim(),icon:ic.trim()||null})}
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.4)',zIndex:200}}></div>
+      <div onClick={e=>e.stopPropagation()} style={{position:'relative',zIndex:201,background:'#fff',borderRadius:14,padding:24,width:400,maxWidth:'90vw',boxShadow:'var(--shadow-lg)'}}>
+        <h3 style={{fontSize:16,fontWeight:600,marginBottom:4}}>{editing?'Modifier le lien':'Nouveau lien'}</h3>
+        <form onSubmit={submit}>
+          <label style={labelStyle}>Titre du bouton</label>
+          <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Mon Telegram" style={inputStyle} autoFocus/>
+          <label style={labelStyle}>URL</label>
+          <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://t.me/..." style={inputStyle}/>
+          <label style={labelStyle}>Username (interne)</label>
+          <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="@sophie_xxx" style={inputStyle}/>
+          <div style={{fontSize:11,color:'var(--fg-subtle)',marginTop:4}}>Jamais affiché publiquement, juste pour ton orga.</div>
+          <label style={labelStyle}>Icône (emoji, optionnel)</label>
+          <input value={ic} onChange={e=>setIc(e.target.value)} maxLength={4} placeholder="auto" style={{...inputStyle,width:80}}/>
+          <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:18}}>
+            <button type="button" onClick={onClose} style={{height:36,padding:'0 16px',borderRadius:8,border:'1px solid var(--border-strong)',background:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:500}}>Annuler</button>
+            <button type="submit" style={{height:36,padding:'0 18px',borderRadius:8,border:'none',background:'var(--accent)',color:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:600}}>{editing?'Enregistrer':'Créer'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================ APP
 function TopBar({title,subtitle,back}){
   return(
@@ -541,16 +755,20 @@ function TopBar({title,subtitle,back}){
 
 function App(){
   const [view,setView]=useState('overview');const [page,setPage]=useState(null);const [period,setPeriod]=useState('7j');
+  const [editPage,setEditPage]=useState(null);
   useEffect(()=>{if(window.lucide)lucide.createIcons()});
   function openPage(p){setPage(p);setView('detail');window.scrollTo(0,0)}
   function back(){setView('overview');setPage(null)}
+  function openEdit(p){setEditPage(p)}
+  function closeEdit(){setEditPage(null)}
   let title,subtitle,backFn=null,screen;
   if(view==='detail'&&page){title=page.data?.title||page.slug;subtitle='Analytics de la page';backFn=back;screen=<PageDetail page={page} period={period} setPeriod={setPeriod}/>}
-  else{title='Mes pages';subtitle='Suivi des clics sur vos pages';screen=<LinksOverview period={period} setPeriod={setPeriod} onOpen={openPage}/>}
+  else{title='Mes pages';subtitle='Suivi des clics sur vos pages';screen=<LinksOverview period={period} setPeriod={setPeriod} onOpen={openPage} onEdit={openEdit}/>}
   return(
     <div style={{minHeight:'100vh',maxWidth:1320,margin:'0 auto'}}>
       <TopBar title={title} subtitle={subtitle} back={backFn}/>
       {screen}
+      {editPage&&<EditDrawer page={editPage} onClose={closeEdit} onUpdated={p=>{setEditPage(p)}}/>}
     </div>
   );
 }
