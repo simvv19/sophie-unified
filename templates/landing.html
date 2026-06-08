@@ -1960,6 +1960,10 @@ function renderAdmin() {
           ${icon("home", 18)}
           Mes pages
         </div>
+        <a class="sb-item" href="/landing/analytics" style="text-decoration:none;color:inherit">
+          ${icon("bar-chart-2", 18)}
+          Analytics
+        </a>
         <div class="sb-spacer"></div>
         <div class="sb-foot">
           <div class="email">${esc(currentUser?.email || "")}</div>
@@ -2262,47 +2266,6 @@ function ovBarChart(clicks, range) {
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block"><line x1="${P}" y1="${baseY}" x2="${W-P}" y2="${baseY}" stroke="var(--border)" stroke-width="1"/>${bars}${lbls}</svg>`;
 }
 
-const OV_DEVICE_COLORS={iphone:'#3B9DF7',android:'#FF9500',pc:'#6366F1',mac:'#5C5A55',tablet:'#1F8A3C',other:'#D4D1CB'};
-const OV_PLATFORM_COLORS={instagram:'#E1306C',tiktok:'#0A0A0A',snapchat:'#FFFC00',facebook:'#1877F2',direct:'#8A8780',google:'#34A853',twitter:'#1DA1F2'};
-
-function ovMeterHTML(items,total,color){
-  if(!items.length)return `<div style="padding:12px 0;color:var(--muted);font-size:13px">Aucune donnée</div>`;
-  return items.slice(0,8).map(it=>{
-    const pctVal=total?Math.round((it.count/total)*100):0;
-    const c=it.color||color;
-    return `
-      <div style="display:flex;align-items:center;gap:10px;padding:7px 0">
-        <span style="flex:1;font-size:13px;font-weight:500">${esc(it.key)}</span>
-        <span style="font-size:12px;color:var(--muted);font-family:ui-monospace,monospace">${formatNum(it.count)}</span>
-        <span style="font-size:12px;font-weight:600;font-family:ui-monospace,monospace;min-width:40px;text-align:right">${pctVal}%</span>
-      </div>
-      <div style="height:5px;border-radius:99px;background:#f0f0f5;overflow:hidden;margin-bottom:2px">
-        <div style="width:${pctVal}%;height:100%;border-radius:99px;background:${c};transition:width .3s"></div>
-      </div>`;
-  }).join("");
-}
-
-function ovDonutSVG(items,total){
-  if(!items.length||!total)return '';
-  const size=148,thick=20,R=(size-thick)/2,C=2*Math.PI*R;
-  let acc=0;
-  const arcs=items.map(it=>{
-    const frac=it.count/total;const len=frac*C;const gap=2;
-    const el=`<circle cx="${size/2}" cy="${size/2}" r="${R}" fill="none" stroke="${it.color||'var(--admin)'}" stroke-width="${thick}" stroke-dasharray="${Math.max(0,len-gap)} ${C-Math.max(0,len-gap)}" stroke-dashoffset="${-acc}" stroke-linecap="butt"/>`;
-    acc+=len;return el;
-  }).join("");
-  const topPct=total?Math.round((items[0].count/total)*100):0;
-  return `<div style="position:relative;width:${size}px;height:${size}px;flex-shrink:0">
-    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="transform:rotate(-90deg)">
-      <circle cx="${size/2}" cy="${size/2}" r="${R}" fill="none" stroke="#f0f0f5" stroke-width="${thick}"/>
-      ${arcs}
-    </svg>
-    <div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center">
-      <div><div style="font-size:20px;font-weight:600;font-variant-numeric:tabular-nums">${topPct}%</div><div style="font-size:11px;color:var(--muted);max-width:70px;line-height:1.2">${esc(items[0].key)}</div></div>
-    </div>
-  </div>`;
-}
-
 async function renderOverviewStats(period) {
   if(period) ovPeriod=period;
   const kpiWrap=document.getElementById("overview_kpis");
@@ -2317,13 +2280,12 @@ async function renderOverviewStats(period) {
   const clicks=visits.filter(v=>v.type==="click");
   const convRate=views.length?Math.round((clicks.length/views.length)*1000)/10:0;
   const countries=ovGroupBy(visits,"country");
-  const cities=ovGroupBy(visits,"city");
-  const devices=ovGroupBy(visits,"device").map(d=>({...d,key:DEVICE_LABELS[d.key]||d.key,color:OV_DEVICE_COLORS[d.key]||'#D4D1CB'}));
-  const platforms=ovGroupBy(visits,"platform").map(p=>({...p,key:(PLATFORM_LABELS[p.key]||p.key),color:OV_PLATFORM_COLORS[p.key]||'#8A8780'}));
+  const platforms=ovGroupBy(visits,"platform");
   const perLabel=OV_PERIODS.find(x=>x.id===ovPeriod)?.label||"";
 
   const periodBtns=OV_PERIODS.map(o=>`<button class="ov-per ${o.id===ovPeriod?"active":""}" data-ovper="${esc(o.id)}">${esc(o.label)}</button>`).join("");
 
+  // KPI cards
   kpiWrap.innerHTML = `
     <style>
       .ov-per{padding:6px 14px;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:500;transition:all .15s}
@@ -2344,14 +2306,6 @@ async function renderOverviewStats(period) {
       .ov-table tr{cursor:pointer;transition:background .1s}
       .ov-table tbody tr:hover{background:#f8f8ff}
       .ov-plat{display:inline-flex;align-items:center;gap:5px;background:#f0f0f5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;color:var(--ink-soft)}
-      .ov-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px}
-      .ov-card-title{font-size:14px;font-weight:600;margin-bottom:4px}
-      .ov-card-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
-      .ov-donut-row{display:flex;align-items:center;gap:20px}
-      .ov-donut-legend{flex:1;display:flex;flex-direction:column;gap:3px}
-      .ov-donut-item{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;font-size:13px}
-      .ov-donut-item:hover{background:#f6f6f8}
-      .ov-donut-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
     </style>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${periodBtns}</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
@@ -2365,12 +2319,13 @@ async function renderOverviewStats(period) {
 
   // Chart
   chartWrap.innerHTML = `
-    <div class="ov-card" style="margin-bottom:14px">
+    <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <div><div style="font-size:14px;font-weight:600">Clics sur vos liens</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(perLabel)} · tous liens</div></div>
         <div style="text-align:right"><div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums">${formatNum(clicks.length)}</div><div style="font-size:11px;color:var(--muted)">clics au total</div></div>
       </div>
       ${ovBarChart(clicks, range)}
+      ${platforms.length?`<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">${platforms.slice(0,6).map(p=>`<span class="ov-plat">${esc(p.key)} <strong>${formatNum(p.count)}</strong></span>`).join("")}</div>`:""}
     </div>
   `;
 
@@ -2410,39 +2365,6 @@ async function renderOverviewStats(period) {
           ${pageStats.length===0?`<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--muted)">Aucune donnée pour cette période</td></tr>`:""}
         </tbody>
       </table>
-    </div>
-
-    <!-- Pays + Villes -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      <div class="ov-card">
-        <div class="ov-card-title">Par pays</div>
-        <div class="ov-card-sub">Part des visites</div>
-        ${ovMeterHTML(countries, visits.length, "var(--admin)")}
-      </div>
-      <div class="ov-card">
-        <div class="ov-card-title">Top villes</div>
-        <div class="ov-card-sub">Les plus actives</div>
-        ${ovMeterHTML(cities, visits.length, "#6366F1")}
-      </div>
-    </div>
-
-    <!-- Appareils + Sources -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      <div class="ov-card">
-        <div class="ov-card-title">Par appareil</div>
-        <div class="ov-card-sub">Répartition des visites</div>
-        <div class="ov-donut-row">
-          ${ovDonutSVG(devices, visits.length)}
-          <div class="ov-donut-legend">
-            ${devices.map(d=>`<div class="ov-donut-item"><span class="ov-donut-dot" style="background:${d.color}"></span><span style="flex:1">${esc(d.key)}</span><span style="font-size:12px;color:var(--muted);font-family:ui-monospace,monospace">${formatNum(d.count)}</span><span style="font-size:13px;font-weight:600;font-family:ui-monospace,monospace;min-width:40px;text-align:right">${visits.length?Math.round(d.count/visits.length*100):0}%</span></div>`).join("")}
-          </div>
-        </div>
-      </div>
-      <div class="ov-card">
-        <div class="ov-card-title">Par source</div>
-        <div class="ov-card-sub">D'où viennent vos visiteurs</div>
-        ${ovMeterHTML(platforms, visits.length, "#E1306C")}
-      </div>
     </div>
   `;
   tableWrap.querySelectorAll("tr[data-pageid]").forEach(row=>{

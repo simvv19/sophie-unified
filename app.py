@@ -370,6 +370,12 @@ def centrale():
 @require_auth
 @require_service("landing")
 def landing():
+    return send_file(ROOT / "templates" / "dashboard" / "liens.html", mimetype="text/html")
+
+@app.route("/landing/edit")
+@require_auth
+@require_service("landing")
+def landing_edit():
     return render_template("landing.html")
 
 
