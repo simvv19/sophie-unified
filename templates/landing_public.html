@@ -878,7 +878,7 @@ async function handleGo(slug) {
     .order("position", { ascending: true }).limit(1);
   const targetUrl = (links && links.length && links[0].url) ? links[0].url : (data.data && data.data.url);
   if (targetUrl) {
-    try { await sb.from("visits").insert({ page_id: data.id, referrer: document.referrer || null, ua: navigator.userAgent }); } catch(e) {}
+    trackVisit(data.id, slug, 'click');
     window.location.href = targetUrl;
   } else {
     window.location.href = "/" + slug;
@@ -901,6 +901,54 @@ async function showRoot() {
       </div>
     </div>`;
   }
+}
+
+// ============================================================ TRACKING
+function detectDevice() {
+  const ua = navigator.userAgent || "";
+  if (/iPad|Tablet|PlayBook/i.test(ua)) return "tablet";
+  if (/iPhone|iPod/i.test(ua)) return "iphone";
+  if (/Android/i.test(ua) && /Mobile/i.test(ua)) return "android";
+  if (/Android/i.test(ua)) return "tablet";
+  if (/Macintosh/i.test(ua)) return "mac";
+  if (/Windows/i.test(ua)) return "pc";
+  if (/Linux/i.test(ua)) return "pc";
+  return "other";
+}
+function detectPlatform() {
+  const ua = (navigator.userAgent || "").toLowerCase();
+  const ref = (document.referrer || "").toLowerCase();
+  if (/tiktok|bytedance|musical_ly/i.test(ua)) return "tiktok";
+  if (/instagram/i.test(ua) || ref.includes("instagram")) return "instagram";
+  if (/snapchat/i.test(ua) || ref.includes("snapchat")) return "snapchat";
+  if (/fban|fbav/i.test(ua) || ref.includes("facebook")) return "facebook";
+  if (ref.includes("t.co") || ref.includes("twitter")) return "twitter";
+  if (ref.includes("google")) return "google";
+  return "direct";
+}
+async function trackVisit(pageId, slug, type) {
+  try {
+    let country = null, city = null;
+    try {
+      const geo = await fetch("https://ipapi.co/json/", { cache: "no-store" });
+      if (geo.ok) {
+        const g = await geo.json();
+        country = g.country_name || g.country || null;
+        city = g.city || null;
+      }
+    } catch(e) {}
+    await sb.from("visits").insert({
+      page_id: pageId,
+      slug: slug,
+      type: type,
+      referrer: document.referrer || null,
+      ua: navigator.userAgent || null,
+      country: country,
+      city: city,
+      device: detectDevice(),
+      platform: detectPlatform()
+    });
+  } catch(e) {}
 }
 
 // ============================================================ PUBLIC LANDING
@@ -929,11 +977,14 @@ async function showLanding(slug) {
   if (s.tiktok_overlay && env.isInApp) {
     renderTikTokOverlay(app, s, env);
     document.title = s.title || data.slug;
+    trackVisit(data.id, slug, 'view');
     return;
   }
 
   renderLanding(app, s);
   document.title = s.title || data.slug;
+  // Track page view
+  trackVisit(data.id, slug, 'view');
 }
 
 function renderLanding(container, s) {
