@@ -325,11 +325,52 @@ function buildTimeSeries(visits,period){
 
 function groupBy(arr,key){const m={};arr.forEach(v=>{const k=v[key]||'Inconnu';m[k]=(m[k]||0)+1});return Object.entries(m).map(([k,v])=>({key:k,count:v})).sort((a,b)=>b.count-a.count)}
 
+// ============================================================ CREATE PAGE
+function NewPageModal({onClose,onCreated}){
+  const [slug,setSlug]=useState('');const [name,setName]=useState('');const [url,setUrl]=useState('');const [saving,setSaving]=useState(false);const [err,setErr]=useState('');
+  async function submit(e){
+    e.preventDefault();if(!slug.trim()){setErr('Slug requis');return}
+    setSaving(true);setErr('');
+    const {data,error}=await sb.from('landing_pages').insert({slug:slug.trim(),data:{name:name.trim()||slug.trim(),title:name.trim()||slug.trim(),url:url.trim()||null}}).select().single();
+    if(error){setErr(error.message);setSaving(false);return}
+    onCreated(data);onClose();
+  }
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:100,display:'grid',placeItems:'center'}} onClick={onClose}>
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.4)'}}></div>
+      <div onClick={e=>e.stopPropagation()} style={{position:'relative',background:'#fff',borderRadius:14,padding:24,width:420,maxWidth:'90vw',boxShadow:'var(--shadow-lg)'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+          <h3 style={{fontSize:16,fontWeight:600}}>Nouvelle page</h3>
+          <button onClick={onClose} style={{width:28,height:28,borderRadius:6,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',fontSize:16,display:'grid',placeItems:'center',color:'var(--fg-muted)'}}>×</button>
+        </div>
+        <form onSubmit={submit}>
+          <label style={{display:'block',fontSize:12,fontWeight:500,color:'var(--fg-muted)',marginBottom:4}}>Slug (URL)</label>
+          <div style={{display:'flex',alignItems:'center',gap:0,marginBottom:14}}>
+            <span style={{padding:'0 10px',height:36,display:'flex',alignItems:'center',background:'var(--bg-muted)',border:'1px solid var(--border-strong)',borderRight:'none',borderRadius:'8px 0 0 8px',fontSize:13,color:'var(--fg-subtle)',whiteSpace:'nowrap'}}>sophiemercier.fr/</span>
+            <input value={slug} onChange={e=>setSlug(e.target.value.replace(/[^a-z0-9-_]/gi,''))} placeholder="mon-lien" style={{flex:1,height:36,padding:'0 12px',border:'1px solid var(--border-strong)',borderRadius:'0 8px 8px 0',fontSize:14,fontFamily:'inherit',outline:'none'}}/>
+          </div>
+          <label style={{display:'block',fontSize:12,fontWeight:500,color:'var(--fg-muted)',marginBottom:4}}>Nom</label>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Ma page" style={{width:'100%',height:36,padding:'0 12px',border:'1px solid var(--border-strong)',borderRadius:8,fontSize:14,fontFamily:'inherit',marginBottom:14,outline:'none'}}/>
+          <label style={{display:'block',fontSize:12,fontWeight:500,color:'var(--fg-muted)',marginBottom:4}}>URL de destination</label>
+          <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://t.me/..." style={{width:'100%',height:36,padding:'0 12px',border:'1px solid var(--border-strong)',borderRadius:8,fontSize:14,fontFamily:'inherit',marginBottom:18,outline:'none'}}/>
+          {err&&<div style={{color:'var(--danger)',fontSize:13,marginBottom:10}}>{err}</div>}
+          <div style={{display:'flex',justifyContent:'flex-end',gap:8}}>
+            <button type="button" onClick={onClose} style={{height:36,padding:'0 16px',borderRadius:8,border:'1px solid var(--border-strong)',background:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:500}}>Annuler</button>
+            <button type="submit" disabled={saving} style={{height:36,padding:'0 18px',borderRadius:8,border:'none',background:'var(--accent)',color:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:600,opacity:saving?.6:1}}>{saving?'Création...':'Créer'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================ OVERVIEW
 function LinksOverview({period,setPeriod,onOpen}){
   const [visits,setVisits]=useState([]);const [pages,setPages]=useState([]);const [loading,setLoading]=useState(true);
+  const [showNew,setShowNew]=useState(false);
   useEffect(()=>{setLoading(true);Promise.all([fetchVisits(period),fetchPages()]).then(([v,p])=>{setVisits(v);setPages(p);setLoading(false)})},[period]);
   useEffect(()=>{if(window.lucide)lucide.createIcons()});
+  function onCreated(pg){setPages(prev=>[...prev,pg])}
 
   const views=visits.filter(v=>v.type==='view');const clicks=visits.filter(v=>v.type==='click');
   const convRate=views.length?clicks.length/views.length:0;
@@ -337,7 +378,6 @@ function LinksOverview({period,setPeriod,onOpen}){
   const series=buildTimeSeries(clicks,period);
   const per=PERIODS.find(p=>p.value===period);
 
-  // Per-page stats
   const rows=useMemo(()=>pages.map(p=>{
     const pv=visits.filter(v=>v.page_id===p.id);
     const pc=pv.filter(v=>v.type==='click');
@@ -352,11 +392,13 @@ function LinksOverview({period,setPeriod,onOpen}){
 
   return(
     <div style={{padding:'22px 24px 56px',background:'var(--bg)',minHeight:'calc(100vh - 56px)'}}>
+      {showNew&&<NewPageModal onClose={()=>setShowNew(false)} onCreated={onCreated}/>}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,marginBottom:18,flexWrap:'wrap'}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <span style={{fontSize:13,color:'var(--fg-muted)',fontWeight:500}}>Periode</span>
           <Segmented value={period} onChange={setPeriod} options={PERIODS.map(p=>({value:p.value,label:p.label}))}/>
         </div>
+        <button onClick={()=>setShowNew(true)} style={{display:'inline-flex',alignItems:'center',gap:6,height:36,padding:'0 16px',borderRadius:8,border:'none',background:'var(--accent)',color:'#fff',cursor:'pointer',fontSize:14,fontFamily:'inherit',fontWeight:600}}><i data-lucide="plus" style={{width:16,height:16}}></i> Nouvelle page</button>
       </div>
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:14}}>
@@ -493,7 +535,6 @@ function TopBar({title,subtitle,back}){
         <div style={{fontSize:15,fontWeight:600,letterSpacing:'-0.01em'}}>{title}</div>
         {subtitle&&<div style={{fontSize:12,color:'var(--fg-muted)',marginTop:1}}>{subtitle}</div>}
       </div>
-      <a href="/landing/edit" style={{display:'inline-flex',alignItems:'center',gap:6,height:34,padding:'0 14px',borderRadius:8,border:'1px solid var(--border-strong)',background:'#fff',color:'var(--fg)',fontSize:13,fontWeight:500,textDecoration:'none',whiteSpace:'nowrap'}}><i data-lucide="pencil" style={{width:14,height:14}}></i> Gérer mes pages</a>
     </header>
   );
 }
