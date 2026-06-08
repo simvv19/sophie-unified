@@ -1519,12 +1519,38 @@ def proxy_ip():
         port = proxy.get("proxy_port")
         user = proxy.get("proxy_user")
         pwd = proxy.get("proxy_pass")
+        last_ip = proxy.get("last_ip")
         if not host:
-            return jsonify(ip=None)
+            return jsonify(ip=last_ip, stale=bool(last_ip))
+        # Try a live check through the proxy (2 quick attempts).
         proxies = {"https": f"socks5://{user}:{pwd}@{host}:{port}",
                    "http": f"socks5://{user}:{pwd}@{host}:{port}"}
-        ip_r = requests.get("https://api.ipify.org", proxies=proxies, timeout=10)
-        return jsonify(ip=ip_r.text.strip())
+        live_ip = None
+        for _ in range(2):
+            try:
+                ip_r = requests.get("https://api.ipify.org", proxies=proxies, timeout=8)
+                candidate = ip_r.text.strip()
+                if candidate:
+                    live_ip = candidate
+                    break
+            except Exception:
+                pass
+        if live_ip:
+            # Refresh stored IP if it changed
+            if live_ip != last_ip:
+                try:
+                    requests.patch(
+                        f"{SUPABASE_URL}/rest/v1/proxies",
+                        params={"id": f"eq.{proxy['id']}"},
+                        json={"last_ip": live_ip},
+                        headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"},
+                        timeout=5,
+                    )
+                except Exception:
+                    pass
+            return jsonify(ip=live_ip, stale=False)
+        # Live check failed (proxy reconnecting / slow): fall back to last known IP
+        return jsonify(ip=last_ip, stale=bool(last_ip))
     except Exception as e:
         return jsonify(error=str(e)), 500
 
