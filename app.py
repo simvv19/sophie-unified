@@ -1813,9 +1813,34 @@ def landing_domain_router():
     host = request.host.split(":")[0].lower()
     if host not in LANDING_DOMAINS:
         return None  # normal conquerorz.co flow
+    # Let API and static asset routes reach their real handlers (e.g. /api/geo)
+    if request.path.startswith("/api/") or request.path.startswith("/static/"):
+        return None
     # Serve as raw HTML (not Jinja2) to avoid template parsing issues
     html_path = ROOT / "templates" / "landing_public.html"
     return send_file(html_path, mimetype="text/html")
+
+
+@app.route("/api/geo")
+def api_geo():
+    """Return the visitor's approximate city for the 'Proche de…' chip."""
+    # Real client IP behind Cloudflare / Railway proxies
+    ip = (request.headers.get("CF-Connecting-IP")
+          or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+          or request.remote_addr
+          or "")
+    if not ip or ip.startswith(("127.", "10.", "192.168.", "172.")):
+        return jsonify({"nearby": None})
+    try:
+        r = requests.get(f"https://ipapi.co/{ip}/json/", timeout=3)
+        if r.ok:
+            d = r.json()
+            city = d.get("city") or d.get("region")
+            if city:
+                return jsonify({"nearby": city})
+    except Exception:
+        pass
+    return jsonify({"nearby": None})
 
 
 if __name__ == "__main__":

@@ -427,7 +427,7 @@ function NewPageModal({onClose,onCreated}){
   async function submit(e){
     e.preventDefault();if(!slug.trim()){setErr('Slug requis');return}
     setSaving(true);setErr('');
-    const {data,error}=await sb.from('landing_pages').insert({owner_id:'7c00387c-d55f-4952-a14c-5d8d14029e5c',slug:slug.trim(),data:{name:name.trim()||slug.trim(),title:name.trim()||slug.trim(),url:url.trim()||null}}).select().single();
+    const {data,error}=await sb.from('landing_pages').insert({owner_id:'7c00387c-d55f-4952-a14c-5d8d14029e5c',slug:slug.trim(),data:{...DEFAULT_PAGE_DATA,name:name.trim()||slug.trim(),title:name.trim()||slug.trim(),url:url.trim()||DEFAULT_PAGE_DATA.url}}).select().single();
     if(error){setErr(error.message);setSaving(false);return}
     onCreated(data);
   }
@@ -660,6 +660,24 @@ function slugify(s){return s.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-
 function normalizeUrl(u){if(!u)return u;u=String(u).trim();if(!u)return u;if(/^[a-z]+:\/\//i.test(u))return u;return"https://"+u.replace(/^\/+/,"")}
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
 function lIcon(name,size=14){return `<svg width="${size}" height="${size}" style="pointer-events:none"><use href="#"></use></svg>`}
+
+const DEFAULT_PAGE_DATA = {
+  title: "Page", handle: "@page", name: "Page", verified: true,
+  sub: "— bienvenue dans mon mode caché ✿",
+  chip_online: true, online_text: "En ligne",
+  chip_location: true, location_text: "Proche de toi",
+  tag: "Mon lien",
+  card_title: "Rejoins-moi par ici ✿",
+  card_desc: "Clique pour découvrir ce que je te garde au chaud.",
+  cta: "Ouvrir le lien", url: "https://t.me/",
+  kiss: "made with ♡", copy: "© Sophie",
+  c_rose: "#2D7FF9", c_deep: "#1A6BE0", c_ink: "#1D1D1E", c_inksoft: "#808084",
+  card_style: "soft", bg_style: "rose", platform: "auto",
+  tiktok_overlay: false,
+  tiktok_title: "Continuer vers mon contenu",
+  tiktok_subtitle: "Pour accéder au lien, ouvre la page dans ton navigateur.",
+  tiktok_button: "APPUI LONG POUR OUVRIR"
+};
 
 let openPageId=null, drawerSaveTimer=null;
 
@@ -2417,6 +2435,7 @@ async function openPageDrawer(pageObj) {
   _drawerPage = pageObj;
   openPageId = pageObj.id;
   const p = pageObj;
+  p.data = { ...DEFAULT_PAGE_DATA, ...(p.data||{}) };
   // Load links
   const r = await sb.from("page_links").select("*").eq("page_id", p.id).order("position", {ascending:true});
   p._links = r.data || [];
