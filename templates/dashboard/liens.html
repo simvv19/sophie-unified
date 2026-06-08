@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liens — Analytics · ConquerorZ</title>
+<link rel="icon" type="image/svg+xml" href="/static/assets/logo-conquerorz.svg">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#FAFAF9;--bg-elevated:#FFFFFF;--bg-muted:#F4F3F1;--bg-sunken:#EFEDE9;
+  --border:#E8E6E1;--border-strong:#D4D1CB;--border-subtle:#F0EEEA;
+  --fg:#0A0A0A;--fg-muted:#5C5A55;--fg-subtle:#8A8780;--fg-on-accent:#FFFFFF;
+  --accent:#FF3B30;--accent-hover:#E62E24;--accent-press:#C9261D;--accent-soft:#FFE5E2;--accent-soft-hover:#FFD3CE;
+  --orange:#FF9500;--orange-soft:#FFF1DC;
+  --success:#1F8A3C;--success-soft:#E3F4E7;--warning:#B8860B;--warning-soft:#FBF1D7;
+  --danger:#D8241A;--danger-soft:#FBE0DE;--info:#2563EB;--info-soft:#DDE8FE;
+  --font-sans:'Geist',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --text-xs:12px;--text-sm:13px;--text-base:14px;--text-md:16px;--text-lg:18px;--text-xl:22px;--text-2xl:28px;
+  --shadow-xs:0 1px 2px rgb(0 0 0/.04);--shadow-sm:0 1px 3px rgb(0 0 0/.06),0 1px 2px rgb(0 0 0/.04);
+  --shadow-md:0 4px 12px rgb(0 0 0/.08);--shadow-lg:0 12px 32px rgb(0 0 0/.12);
+  --ease:cubic-bezier(.2,0,0,1);--dur-micro:120ms;--dur-base:280ms;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--fg);font-size:var(--text-base);
+  -webkit-font-smoothing:antialiased;line-height:1.5}
+.cz-row:hover{background:var(--bg-muted)}
+.cz-pulse{transform-box:fill-box;transform-origin:center;animation:czpulse 2.6s var(--ease) infinite}
+@keyframes czpulse{0%{transform:scale(1);opacity:.42}70%{transform:scale(3.2);opacity:0}100%{transform:scale(3.2);opacity:0}}
+.cz-spin{animation:czspin .8s linear infinite}
+@keyframes czspin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:3px solid var(--bg-elevated)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+// ============================================================ SUPABASE
+const sb = window.supabase.createClient(
+  "https://sfaxubipmidysfvtfvdx.supabase.co",
+  "sb_publishable_lRUeA0F7gERIq5SdUcLEWA_p5czx1uv"
+);
+
+// ============================================================ HELPERS
+function fmt(n){n=Math.round(n);return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
+function pct(x,total){if(!total)return '0 %';return (Math.round((x/total)*1000)/10).toString().replace('.',',')+' %'}
+
+// ============================================================ ATOMS
+function Button({variant='primary',size='md',icon,children,...rest}){
+  const s={
+    base:{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,borderRadius:8,fontFamily:'inherit',fontWeight:500,border:'1px solid transparent',cursor:'pointer',transition:'background var(--dur-micro) var(--ease)',whiteSpace:'nowrap'},
+    primary:{background:'var(--accent)',color:'#fff'},
+    secondary:{background:'#fff',color:'var(--fg)',borderColor:'var(--border-strong)'},
+    ghost:{background:'transparent',color:'var(--fg)'},
+    sm:{height:28,padding:'0 10px',fontSize:13},md:{height:36,padding:'0 14px',fontSize:14},lg:{height:44,padding:'0 20px',fontSize:15},
+  };
+  return <button {...rest} style={{...s.base,...s[variant],...s[size],...(rest.style||{})}}>{icon&&<i data-lucide={icon} style={{width:14,height:14}}></i>}{children}</button>;
+}
+
+function Badge({tone='neutral',dot,children,style}){
+  const tones={success:{background:'var(--success-soft)',color:'var(--success)'},orange:{background:'var(--orange-soft)',color:'var(--warning)'},danger:{background:'var(--danger-soft)',color:'var(--danger)'},accent:{background:'var(--accent-soft)',color:'var(--accent-press)'},info:{background:'var(--info-soft)',color:'var(--info)'},neutral:{background:'var(--bg-muted)',color:'var(--fg-muted)'}};
+  return <span style={{display:'inline-flex',alignItems:'center',gap:6,height:22,padding:'0 8px',borderRadius:4,fontSize:11,fontWeight:600,letterSpacing:'0.04em',...tones[tone],...(style||{})}}>{dot&&<span style={{width:6,height:6,borderRadius:'50%',background:tones[tone]?.color}}></span>}{children}</span>;
+}
+
+function Segmented({options,value,onChange}){
+  return(
+    <div style={{display:'inline-flex',padding:2,gap:2,background:'var(--bg-muted)',border:'1px solid var(--border)',borderRadius:9}}>
+      {options.map(o=>{const on=o.value===value;return(
+        <button key={o.value} onClick={()=>onChange(o.value)} style={{height:34,padding:'0 12px',borderRadius:7,border:'none',cursor:'pointer',font:'inherit',fontSize:13,fontWeight:on?600:500,color:on?'var(--fg)':'var(--fg-muted)',background:on?'#fff':'transparent',boxShadow:on?'var(--shadow-xs)':'none',transition:'background var(--dur-micro) var(--ease)'}}>{o.label}</button>
+      )})}
+    </div>
+  );
+}
+
+function Card({children,style,pad=20}){
+  return <div style={{background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:12,boxShadow:'var(--shadow-sm)',padding:pad,...(style||{})}}>{children}</div>;
+}
+
+function StatCard({label,value,unit,delta,tone='success',emphasis,icon}){
+  return(
+    <div style={{background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:12,boxShadow:'var(--shadow-sm)',padding:18,position:'relative',overflow:'hidden',outline:emphasis?'1px solid var(--accent-soft)':'none'}}>
+      {emphasis&&<div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,var(--accent-soft) 0%,transparent 42%)',opacity:.5,pointerEvents:'none'}}></div>}
+      <div style={{position:'relative',display:'flex',alignItems:'center',gap:7}}>
+        {icon&&<i data-lucide={icon} style={{width:14,height:14,color:emphasis?'var(--accent)':'var(--fg-subtle)'}}></i>}
+        <span style={{fontSize:12,color:'var(--fg-muted)',fontWeight:500}}>{label}</span>
+      </div>
+      <div style={{position:'relative',display:'flex',alignItems:'baseline',gap:8,marginTop:9}}>
+        <span style={{fontSize:30,fontWeight:600,letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums',lineHeight:1}}>{value}{unit&&<span style={{fontSize:16,color:'var(--fg-muted)',fontWeight:500,marginLeft:2}}>{unit}</span>}</span>
+      </div>
+      {delta!=null&&(
+        <div style={{position:'relative',marginTop:10,display:'flex',alignItems:'center',gap:5}}>
+          <i data-lucide={tone==='danger'?'trending-down':'trending-up'} style={{width:13,height:13,color:tone==='danger'?'var(--danger)':'var(--success)'}}></i>
+          <span style={{fontSize:12,fontWeight:600,color:tone==='danger'?'var(--danger)':'var(--success)',fontFamily:'var(--font-mono)'}}>{delta}</span>
+          <span style={{fontSize:12,color:'var(--fg-subtle)'}}>vs p&eacute;riode pr&eacute;c.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MeterRow({label,sub,value,pctVal,color='var(--accent)',icon,code}){
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0'}}>
+      {code&&<span style={{width:26,height:18,flexShrink:0,display:'grid',placeItems:'center',fontSize:10,fontWeight:600,fontFamily:'var(--font-mono)',color:'var(--fg-muted)',background:'var(--bg-muted)',border:'1px solid var(--border)',borderRadius:4}}>{code}</span>}
+      {icon&&<i data-lucide={icon} style={{width:16,height:16,color:'var(--fg-muted)',flexShrink:0}}></i>}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,marginBottom:6}}>
+          <span style={{fontSize:13,fontWeight:500,color:'var(--fg)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}{sub&&<span style={{color:'var(--fg-subtle)',fontWeight:400,marginLeft:6}}>{sub}</span>}</span>
+          <span style={{display:'flex',alignItems:'baseline',gap:8,flexShrink:0}}>
+            <span style={{fontSize:12,color:'var(--fg-subtle)',fontFamily:'var(--font-mono)'}}>{value}</span>
+            <span style={{fontSize:13,fontWeight:600,color:'var(--fg)',fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums',minWidth:42,textAlign:'right'}}>{pctVal}</span>
+          </span>
+        </div>
+        <div style={{height:6,borderRadius:999,background:'var(--bg-muted)',overflow:'hidden'}}>
+          <div style={{width:pctVal,height:'100%',borderRadius:999,background:color,transition:'width var(--dur-base) var(--ease)'}}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================ CHARTS
+function TimeSeriesChart({series,height=240,accent='var(--accent)',gradId='ts-grad'}){
+  const [hi,setHi]=useState(null);const wrapRef=useRef(null);
+  const W=1000,H=1000,PL=4,PR=1,PT=6,PB=10;
+  const pts=series.filter(s=>s.value!=null);const vals=pts.map(s=>s.value);
+  const max=Math.max(10,...vals);const niceMax=Math.ceil(max/5)*5;const n=series.length;
+  const xPct=i=>PL+(i*(100-PL-PR))/(n-1);const yPct=v=>PT+(1-v/niceMax)*(100-PT-PB);
+  let dPath='',dArea='',firstX=null,lastX=null,started=false;
+  series.forEach((s,i)=>{if(s.value==null)return;const x=xPct(i)*W/100,y=yPct(s.value)*H/100;if(!started){dPath+=`M ${x} ${y}`;firstX=x;started=true}else dPath+=` L ${x} ${y}`;lastX=x});
+  const baseY=(100-PB)*H/100;if(started)dArea=dPath+` L ${lastX} ${baseY} L ${firstX} ${baseY} Z`;
+  function onMove(e){const r=wrapRef.current.getBoundingClientRect();const relPct=(e.clientX-r.left)/r.width*100;let best=null,bd=1e9;series.forEach((s,i)=>{if(s.value==null)return;const d=Math.abs(xPct(i)-relPct);if(d<bd){bd=d;best=i}});setHi(best)}
+  const gy=[0,.25,.5,.75,1];const hiPt=hi!=null?series[hi]:null;
+  return(
+    <div ref={wrapRef} style={{position:'relative',width:'100%',height}} onMouseMove={onMove} onMouseLeave={()=>setHi(null)}>
+      {gy.map((g,i)=>{const topPct=PT+g*(100-PT-PB);const val=Math.round(niceMax*(1-g));return(
+        <div key={i} style={{position:'absolute',left:0,right:0,top:`${topPct}%`,height:0}}>
+          <div style={{position:'absolute',left:`${PL}%`,right:`${PR}%`,borderTop:i===gy.length-1?'1px solid var(--border)':'1px dashed var(--border-subtle)'}}></div>
+          <div style={{position:'absolute',left:0,top:-8,width:`${PL}%`,paddingRight:8,textAlign:'right',fontSize:11,color:'var(--fg-subtle)',fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums'}}>{fmt(val)}</div>
+        </div>
+      )})}
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{position:'absolute',inset:0,width:'100%',height:'100%',display:'block',overflow:'visible'}}>
+        <defs><linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF3B30" stopOpacity="0.20"/><stop offset="100%" stopColor="#FF3B30" stopOpacity="0"/></linearGradient></defs>
+        {dArea&&<path d={dArea} fill={`url(#${gradId})`}/>}
+        {dPath&&<path d={dPath} fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>}
+        {hiPt&&hiPt.value!=null&&<line x1={xPct(hi)*W/100} x2={xPct(hi)*W/100} y1={PT*H/100} y2={baseY} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke"/>}
+      </svg>
+      {series.map((s,i)=>s.label?<div key={i} style={{position:'absolute',left:`${xPct(i)}%`,bottom:0,transform:'translateX(-50%)',fontSize:11,color:'var(--fg-subtle)',fontFamily:'var(--font-mono)',whiteSpace:'nowrap'}}>{s.label}</div>:null)}
+      {hiPt&&hiPt.value!=null&&(
+        <>
+          <div style={{position:'absolute',left:`${xPct(hi)}%`,top:`${yPct(hiPt.value)}%`,width:11,height:11,marginLeft:-5.5,marginTop:-5.5,borderRadius:'50%',background:'#fff',border:`2.5px solid ${accent}`,pointerEvents:'none',zIndex:4}}></div>
+          <div style={{position:'absolute',left:`${xPct(hi)}%`,top:`${yPct(hiPt.value)}%`,transform:'translate(-50%, calc(-100% - 14px))',pointerEvents:'none',zIndex:5}}>
+            <div style={{background:'var(--fg)',color:'#fff',borderRadius:8,padding:'7px 10px',boxShadow:'var(--shadow-md)',whiteSpace:'nowrap',textAlign:'center'}}>
+              <div style={{fontSize:16,fontWeight:600,fontVariantNumeric:'tabular-nums',fontFamily:'var(--font-mono)'}}>{fmt(hiPt.value)}</div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.7)'}}>clics &middot; {hiPt.label||''}</div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Sparkline({series,width=96,height=30,color='var(--accent)'}){
+  const pts=series.filter(s=>s.value!=null);const vals=pts.map(s=>s.value);
+  const max=Math.max(1,...vals),min=Math.min(...vals);const n=pts.length;
+  if(n<2)return <div style={{width,height}}></div>;
+  const x=i=>(i*width)/(n-1);const y=v=>height-3-((v-min)/Math.max(1,max-min))*(height-6);
+  const d=pts.map((s,i)=>`${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(s.value).toFixed(1)}`).join(' ');
+  const area=d+` L ${width} ${height} L 0 ${height} Z`;
+  return(
+    <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} style={{display:'block'}}>
+      <defs><linearGradient id="spk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF3B30" stopOpacity="0.18"/><stop offset="100%" stopColor="#FF3B30" stopOpacity="0"/></linearGradient></defs>
+      <path d={area} fill="url(#spk)"/><path d={d} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function Donut({data,size=168,thickness=22}){
+  const [hi,setHi]=useState(null);const total=data.reduce((a,d)=>a+d.clicks,0);
+  const R=(size-thickness)/2;const C=2*Math.PI*R;let acc=0;const top=data[0]||{clicks:0,label:'—'};
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:22}}>
+      <div style={{position:'relative',width:size,height:size,flexShrink:0}}>
+        <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{transform:'rotate(-90deg)'}}>
+          <circle cx={size/2} cy={size/2} r={R} fill="none" stroke="var(--bg-muted)" strokeWidth={thickness}/>
+          {data.map((d,i)=>{const frac=d.clicks/total;const len=frac*C;const gap=2;const el=(
+            <circle key={i} cx={size/2} cy={size/2} r={R} fill="none" stroke={d.color} strokeWidth={hi===i?thickness+4:thickness} strokeDasharray={`${Math.max(0,len-gap)} ${C-Math.max(0,len-gap)}`} strokeDashoffset={-acc} strokeLinecap="butt" style={{transition:'stroke-width var(--dur-micro) var(--ease)',cursor:'default'}} onMouseEnter={()=>setHi(i)} onMouseLeave={()=>setHi(null)}/>
+          );acc+=len;return el})}
+        </svg>
+        <div style={{position:'absolute',inset:0,display:'grid',placeItems:'center',textAlign:'center'}}>
+          <div>
+            <div style={{fontSize:22,fontWeight:600,letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>{hi!=null?pct(data[hi].clicks,total):pct(top.clicks,total)}</div>
+            <div style={{fontSize:11,color:'var(--fg-muted)',maxWidth:80,lineHeight:1.25}}>{hi!=null?data[hi].label:top.label}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{flex:1,display:'flex',flexDirection:'column',gap:2}}>
+        {data.map((d,i)=>(
+          <div key={i} onMouseEnter={()=>setHi(i)} onMouseLeave={()=>setHi(null)} style={{display:'flex',alignItems:'center',gap:9,padding:'5px 6px',borderRadius:6,background:hi===i?'var(--bg-muted)':'transparent',cursor:'default'}}>
+            <span style={{width:9,height:9,borderRadius:3,background:d.color,flexShrink:0}}></span>
+            <span style={{flex:1,fontSize:13,color:'var(--fg)'}}>{d.label}</span>
+            <span style={{fontSize:12,color:'var(--fg-subtle)',fontFamily:'var(--font-mono)'}}>{fmt(d.clicks)}</span>
+            <span style={{fontSize:13,fontWeight:600,fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums',minWidth:46,textAlign:'right'}}>{pct(d.clicks,total)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================ WORLD MAP
+function WorldMap({cities,total,height=440}){
+  const VW=980,VH=470;const[geo,setGeo]=useState(null);const[err,setErr]=useState(false);const[hi,setHi]=useState(null);const[t,setT]=useState(null);
+  const svgRef=useRef(null);const zoomRef=useRef(null);const initRef=useRef(null);
+  useEffect(()=>{let dead=false;async function load(){try{if(!window.d3||!window.topojson){setErr(true);return}if(!window.__czTopo){window.__czTopo=await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')}const topo=window.__czTopo;const land=topojson.feature(topo,topo.objects.countries);const feats=land.features.filter(f=>f.id!=='010');const fc={type:'FeatureCollection',features:feats};const projection=d3.geoNaturalEarth1();projection.fitExtent([[8,8],[VW-8,VH-8]],fc);const path=d3.geoPath(projection);const paths=feats.map(f=>path(f));if(!dead)setGeo({paths,project:([lon,lat])=>projection([lon,lat])})}catch(e){if(!dead)setErr(true)}}load();return()=>{dead=true}},[]);
+  useEffect(()=>{if(!geo||!svgRef.current||!window.d3)return;const corners=[[-12,60],[34,60],[34,18],[-12,18],[11,40]].map(geo.project);const xs=corners.map(p=>p[0]),ys=corners.map(p=>p[1]);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const cx=(x0+x1)/2,cy=(y0+y1)/2;let k=.92*Math.min(VW/(x1-x0),VH/(y1-y0));k=Math.max(1,Math.min(9,k));const tx=VW/2-k*cx,ty=VH/2-k*cy;const initial=d3.zoomIdentity.translate(tx,ty).scale(k);initRef.current=initial;const zoom=d3.zoom().scaleExtent([1,9]).translateExtent([[0,0],[VW,VH]]).on('zoom',e=>setT(e.transform));zoomRef.current=zoom;const sel=d3.select(svgRef.current);sel.call(zoom);sel.call(zoom.transform,initial)},[geo]);
+  function zoomBy(f){if(!zoomRef.current||!svgRef.current)return;d3.select(svgRef.current).transition().duration(260).call(zoomRef.current.scaleBy,f)}
+  function reset(){if(!zoomRef.current||!svgRef.current||!initRef.current)return;d3.select(svgRef.current).transition().duration(360).call(zoomRef.current.transform,initRef.current)}
+  useEffect(()=>{if(geo&&window.lucide)lucide.createIcons()},[geo,err]);
+  const k=t?t.k:1;const maxClicks=Math.max(...cities.map(c=>c.clicks),1);const rBase=c=>4+Math.sqrt(c.clicks/maxClicks)*20;const rOf=c=>rBase(c)/k;
+  const tstr=t?`translate(${t.x},${t.y}) scale(${t.k})`:'';
+  return(
+    <div style={{position:'relative',width:'100%'}}>
+      <div style={{position:'relative',width:'100%',borderRadius:10,overflow:'hidden',background:'linear-gradient(180deg,#FBFBFA 0%,#F4F3F1 100%)',border:'1px solid var(--border)'}}>
+        <svg ref={svgRef} viewBox={`0 0 ${VW} ${VH}`} style={{width:'100%',height,display:'block',cursor:'grab',touchAction:'none'}}>
+          <g transform={tstr}>
+            {geo&&geo.paths.map((d,i)=><path key={i} d={d} fill="#E7E5E0" stroke="#D8D5CF" strokeWidth="0.6" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>)}
+            {geo&&t&&cities.slice(0,5).map((c,i)=>{const p=geo.project([c.lon,c.lat]);if(!p)return null;return <g key={'h'+i} transform={`translate(${p[0]} ${p[1]})`}><circle r={rOf(c)} fill="var(--accent)" className="cz-pulse" style={{animationDelay:`${i*.45}s`}}/></g>})}
+            {geo&&t&&cities.map((c,i)=>{const p=geo.project([c.lon,c.lat]);if(!p)return null;const r=rOf(c);const on=hi===i;return(
+              <g key={i} transform={`translate(${p[0]} ${p[1]})`} style={{cursor:'pointer'}} onMouseEnter={()=>setHi(i)} onMouseLeave={()=>setHi(null)}>
+                <circle r={r+6/k} fill="transparent"/><circle r={r} fill="var(--accent)" fillOpacity={on?.96:.74} stroke="#fff" strokeWidth={on?2:1.25} vectorEffect="non-scaling-stroke"/><circle r={Math.max(1.4/k,r*.34)} fill="#fff" fillOpacity={.92}/>
+              </g>
+            )})}
+          </g>
+        </svg>
+        {geo&&t&&hi!=null&&(()=>{const c=cities[hi];const p=t.apply(geo.project([c.lon,c.lat]));if(p[0]<0||p[0]>VW||p[1]<0||p[1]>VH)return null;const lx=(p[0]/VW)*100,ly=(p[1]/VH)*100;return(
+          <div style={{position:'absolute',left:`${lx}%`,top:`${ly}%`,transform:`translate(-50%, calc(-100% - ${rBase(c)+9}px))`,pointerEvents:'none',zIndex:6}}>
+            <div style={{background:'var(--fg)',color:'#fff',borderRadius:8,padding:'8px 11px',boxShadow:'var(--shadow-lg)',whiteSpace:'nowrap'}}>
+              <div style={{display:'flex',alignItems:'center',gap:7}}><span style={{fontSize:13,fontWeight:600}}>{c.city}</span></div>
+              <div style={{marginTop:3,display:'flex',alignItems:'baseline',gap:7}}><span style={{fontSize:15,fontWeight:600,fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums'}}>{fmt(c.clicks)}</span><span style={{fontSize:11,color:'rgba(255,255,255,0.7)'}}>clics &middot; {pct(c.clicks,total)}</span></div>
+            </div>
+          </div>
+        )})()}
+        {!geo&&!err&&<div style={{position:'absolute',inset:0,display:'grid',placeItems:'center',color:'var(--fg-subtle)',fontSize:13}}><div style={{display:'flex',alignItems:'center',gap:8}}><span className="cz-spin" style={{width:14,height:14,border:'2px solid var(--border-strong)',borderTopColor:'var(--accent)',borderRadius:'50%'}}></span> Chargement de la carte...</div></div>}
+        {geo&&<div style={{position:'absolute',right:12,top:12,display:'flex',flexDirection:'column',gap:6}}>
+          {[['plus',()=>zoomBy(1.6),'Zoomer'],['minus',()=>zoomBy(1/1.6),'Dezoomer'],['locate-fixed',reset,'Vue Europe']].map(([ic,fn,lbl])=>(
+            <button key={ic} onClick={fn} title={lbl} style={{width:32,height:32,display:'grid',placeItems:'center',borderRadius:8,border:'1px solid var(--border)',background:'rgb(255 255 255/.9)',backdropFilter:'blur(6px)',cursor:'pointer',color:'var(--fg-muted)',boxShadow:'var(--shadow-xs)'}}><i data-lucide={ic} style={{width:15,height:15}}></i></button>
+          ))}
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================ DATA LAYER (real Supabase)
+const PERIODS=[
+  {value:'ajd',label:"Aujourd'hui",days:1},
+  {value:'hier',label:'Hier',days:1},
+  {value:'7j',label:'7 jours',days:7},
+  {value:'30j',label:'30 jours',days:30},
+  {value:'3mois',label:'3 mois',days:91},
+];
+
+// Known city coords for the map
+const CITY_COORDS={
+  'Paris':{lat:48.857,lon:2.352},'Lyon':{lat:45.764,lon:4.836},'Marseille':{lat:43.296,lon:5.370},'Bordeaux':{lat:44.838,lon:-0.579},
+  'Lille':{lat:50.629,lon:3.057},'Toulouse':{lat:43.605,lon:1.444},'Nantes':{lat:47.218,lon:-1.554},'Strasbourg':{lat:48.573,lon:7.752},
+  'Bruxelles':{lat:50.851,lon:4.352},'Geneve':{lat:46.204,lon:6.143},'Montreal':{lat:45.502,lon:-73.567},
+  'New York':{lat:40.713,lon:-74.006},'Los Angeles':{lat:34.052,lon:-118.244},'Londres':{lat:51.507,lon:-0.128},
+  'Casablanca':{lat:33.573,lon:-7.590},'Dakar':{lat:14.692,lon:-17.446},'Abidjan':{lat:5.360,lon:-4.008},
+  'Berlin':{lat:52.520,lon:13.405},'Madrid':{lat:40.417,lon:-3.703},'Dubai':{lat:25.205,lon:55.271},
+};
+const DEVICE_COLORS={iphone:'var(--accent)',android:'#FF9500',pc:'#6366F1',mac:'#5C5A55',tablet:'#1F8A3C',other:'var(--border-strong)'};
+const DEVICE_LABELS={iphone:'iPhone',android:'Android',pc:'Windows PC',mac:'Mac',tablet:'Tablette',other:'Autre'};
+const PLATFORM_TONES={instagram:'accent',tiktok:'neutral',snapchat:'orange',facebook:'info',direct:'neutral',google:'success',twitter:'info'};
+
+function dateRange(period){
+  const now=new Date();
+  let from;
+  if(period==='hier'){from=new Date(now);from.setDate(from.getDate()-1);from.setHours(0,0,0,0);const to=new Date(from);to.setHours(23,59,59,999);return{from:from.toISOString(),to:to.toISOString()}}
+  if(period==='ajd'){from=new Date(now);from.setHours(0,0,0,0);return{from:from.toISOString(),to:now.toISOString()}}
+  from=new Date(now);
+  const days=PERIODS.find(p=>p.value===period)?.days||7;
+  from.setDate(from.getDate()-days);from.setHours(0,0,0,0);
+  return{from:from.toISOString(),to:now.toISOString()};
+}
+
+async function fetchVisits(period,pageId){
+  const {from,to}=dateRange(period);
+  let q=sb.from('visits').select('*').gte('created_at',from).lte('created_at',to);
+  if(pageId)q=q.eq('page_id',pageId);
+  const {data}=await q;
+  return data||[];
+}
+
+async function fetchPages(){
+  const {data}=await sb.from('landing_pages').select('id,slug,data,created_at').order('created_at',{ascending:true});
+  return data||[];
+}
+
+function buildTimeSeries(visits,period){
+  const {from}=dateRange(period);const per=PERIODS.find(p=>p.value===period);
+  const days=per.days;const buckets=days<=1?24:days;
+  const series=Array.from({length:buckets},(_,i)=>({label:'',value:0}));
+  visits.forEach(v=>{
+    const d=new Date(v.created_at);
+    if(days<=1){const h=d.getHours();if(h<buckets){series[h].value++;series[h].label=h%3===0?h+'h':''}}
+    else{const diff=Math.floor((d-new Date(from))/(1000*60*60*24));if(diff>=0&&diff<buckets){series[diff].value++;if(buckets<=7)series[diff].label=['lun','mar','mer','jeu','ven','sam','dim'][(diff+new Date(from).getDay())%7];else if(diff%5===0)series[diff].label=(diff+1)+''}}
+  });
+  return series;
+}
+
+function groupBy(arr,key){const m={};arr.forEach(v=>{const k=v[key]||'Inconnu';m[k]=(m[k]||0)+1});return Object.entries(m).map(([k,v])=>({key:k,count:v})).sort((a,b)=>b.count-a.count)}
+
+// ============================================================ OVERVIEW
+function LinksOverview({period,setPeriod,onOpen}){
+  const [visits,setVisits]=useState([]);const [pages,setPages]=useState([]);const [loading,setLoading]=useState(true);
+  useEffect(()=>{setLoading(true);Promise.all([fetchVisits(period),fetchPages()]).then(([v,p])=>{setVisits(v);setPages(p);setLoading(false)})},[period]);
+  useEffect(()=>{if(window.lucide)lucide.createIcons()});
+
+  const views=visits.filter(v=>v.type==='view');const clicks=visits.filter(v=>v.type==='click');
+  const convRate=views.length?clicks.length/views.length:0;
+  const countries=groupBy(visits,'country');
+  const series=buildTimeSeries(clicks,period);
+  const per=PERIODS.find(p=>p.value===period);
+
+  // Per-page stats
+  const rows=useMemo(()=>pages.map(p=>{
+    const pv=visits.filter(v=>v.page_id===p.id);
+    const pc=pv.filter(v=>v.type==='click');
+    const pvw=pv.filter(v=>v.type==='view');
+    const rate=pvw.length?pc.length/pvw.length:0;
+    const topC=groupBy(pv,'country')[0];
+    const s=buildTimeSeries(pc,period);
+    return{page:p,clicks:pc.length,views:pvw.length,rate,topCountry:topC,series:s};
+  }).sort((a,b)=>b.clicks-a.clicks),[visits,pages,period]);
+
+  if(loading)return <div style={{padding:60,textAlign:'center',color:'var(--fg-subtle)'}}><span className="cz-spin" style={{display:'inline-block',width:20,height:20,border:'2.5px solid var(--border-strong)',borderTopColor:'var(--accent)',borderRadius:'50%'}}></span><div style={{marginTop:12}}>Chargement...</div></div>;
+
+  return(
+    <div style={{padding:'22px 24px 56px',background:'var(--bg)',minHeight:'calc(100vh - 56px)'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,marginBottom:18,flexWrap:'wrap'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:13,color:'var(--fg-muted)',fontWeight:500}}>Periode</span>
+          <Segmented value={period} onChange={setPeriod} options={PERIODS.map(p=>({value:p.value,label:p.label}))}/>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:14}}>
+        <StatCard emphasis icon="mouse-pointer-click" label="Total clics" value={fmt(clicks.length)}/>
+        <StatCard icon="eye" label="Vues" value={fmt(views.length)}/>
+        <StatCard icon="percent" label="Conversion" value={(Math.round(convRate*1000)/10).toString().replace('.',',')} unit="%"/>
+        <StatCard icon="globe" label="Pays" value={countries.length}/>
+      </div>
+
+      <Card style={{marginBottom:14}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+          <div><div style={{fontSize:14,fontWeight:600}}>Clics sur vos liens</div><div style={{fontSize:12,color:'var(--fg-muted)',marginTop:2}}>{per.label} &middot; tous liens confondus</div></div>
+          <div style={{textAlign:'right'}}><div style={{fontSize:22,fontWeight:600,letterSpacing:'-0.02em',fontVariantNumeric:'tabular-nums'}}>{fmt(clicks.length)}</div><div style={{fontSize:11,color:'var(--fg-subtle)'}}>clics au total</div></div>
+        </div>
+        <TimeSeriesChart series={series} height={240} gradId="ov-grad"/>
+      </Card>
+
+      <Card pad={0}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 20px 12px'}}>
+          <div style={{fontSize:14,fontWeight:600}}>Vos pages <span style={{color:'var(--fg-subtle)',fontWeight:400,fontFamily:'var(--font-mono)',fontSize:13}}>&middot; {rows.length}</span></div>
+        </div>
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+          <thead><tr style={{background:'var(--bg-muted)'}}>
+            {[['page','left'],['tendance','left'],['clics','right'],['vues','right'],['conversion','right'],['top pays','left'],['','right']].map(([h,al],i)=>(
+              <th key={i} style={{textAlign:al,padding:'9px 20px',fontSize:11,fontWeight:600,color:'var(--fg-muted)',textTransform:'uppercase',letterSpacing:'0.05em',borderTop:'1px solid var(--border-subtle)',borderBottom:'1px solid var(--border-subtle)'}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {rows.map(r=>(
+              <tr key={r.page.id} onClick={()=>onOpen(r.page)} className="cz-row" style={{borderTop:'1px solid var(--border-subtle)',cursor:'pointer'}}>
+                <td style={{padding:'13px 20px'}}><div style={{fontWeight:600,marginBottom:3}}>{r.page.data?.title||r.page.slug}</div><div style={{fontSize:12,color:'var(--fg-subtle)',fontFamily:'var(--font-mono)'}}>/{r.page.slug}</div></td>
+                <td style={{padding:'13px 20px'}}><Sparkline series={r.series}/></td>
+                <td style={{padding:'13px 20px',textAlign:'right'}}><span style={{fontWeight:600,fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums',fontSize:14}}>{fmt(r.clicks)}</span></td>
+                <td style={{padding:'13px 20px',textAlign:'right',fontFamily:'var(--font-mono)',color:'var(--fg-muted)'}}>{fmt(r.views)}</td>
+                <td style={{padding:'13px 20px',textAlign:'right',fontFamily:'var(--font-mono)',fontVariantNumeric:'tabular-nums'}}>{(Math.round(r.rate*1000)/10).toString().replace('.',',')}{' '}%</td>
+                <td style={{padding:'13px 20px'}}>{r.topCountry?<span style={{color:'var(--fg-muted)'}}>{r.topCountry.key}</span>:<span style={{color:'var(--fg-subtle)'}}>—</span>}</td>
+                <td style={{padding:'13px 20px',textAlign:'right'}}><i data-lucide="chevron-right" style={{width:16,height:16,color:'var(--fg-subtle)'}}></i></td>
+              </tr>
+            ))}
+            {rows.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'var(--fg-subtle)'}}>Aucune donnee pour cette periode</td></tr>}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ============================================================ DETAIL
+function PageDetail({page,period,setPeriod}){
+  const [visits,setVisits]=useState([]);const [loading,setLoading]=useState(true);
+  useEffect(()=>{setLoading(true);fetchVisits(period,page.id).then(v=>{setVisits(v);setLoading(false)})},[period,page.id]);
+  useEffect(()=>{if(window.lucide)lucide.createIcons()});
+
+  const views=visits.filter(v=>v.type==='view');const clicks=visits.filter(v=>v.type==='click');
+  const convRate=views.length?clicks.length/views.length:0;
+  const countries=groupBy(visits,'country');
+  const citiesRaw=groupBy(visits,'city');
+  const devices=groupBy(visits,'device');
+  const platforms=groupBy(visits,'platform');
+  const series=buildTimeSeries(clicks,period);
+  const per=PERIODS.find(p=>p.value===period);
+
+  const cityData=citiesRaw.slice(0,10).map(c=>{const coords=CITY_COORDS[c.key];return{city:c.key,clicks:c.count,lat:coords?.lat||0,lon:coords?.lon||0}}).filter(c=>c.lat!==0);
+  const deviceData=devices.map(d=>({key:d.key,label:DEVICE_LABELS[d.key]||d.key,clicks:d.count,color:DEVICE_COLORS[d.key]||'var(--border-strong)'}));
+
+  if(loading)return <div style={{padding:60,textAlign:'center',color:'var(--fg-subtle)'}}><span className="cz-spin" style={{display:'inline-block',width:20,height:20,border:'2.5px solid var(--border-strong)',borderTopColor:'var(--accent)',borderRadius:'50%'}}></span></div>;
+
+  return(
+    <div style={{padding:'22px 24px 56px',background:'var(--bg)',minHeight:'calc(100vh - 56px)'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,marginBottom:18,flexWrap:'wrap'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <span style={{width:38,height:38,borderRadius:9,background:'var(--accent-soft)',display:'grid',placeItems:'center',flexShrink:0}}><i data-lucide="link" style={{width:18,height:18,color:'var(--accent-press)'}}></i></span>
+          <div><div style={{fontSize:15,fontWeight:600}}>{page.data?.title||page.slug}</div><div style={{fontSize:12,color:'var(--fg-muted)',fontFamily:'var(--font-mono)'}}>sophiemercier.fr/{page.slug}</div></div>
+        </div>
+        <Segmented value={period} onChange={setPeriod} options={PERIODS.map(p=>({value:p.value,label:p.label}))}/>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:14}}>
+        <StatCard emphasis icon="mouse-pointer-click" label="Clics" value={fmt(clicks.length)}/>
+        <StatCard icon="eye" label="Vues" value={fmt(views.length)}/>
+        <StatCard icon="percent" label="Conversion" value={(Math.round(convRate*1000)/10).toString().replace('.',',')} unit="%"/>
+        <StatCard icon="globe" label="Pays" value={countries.length}/>
+      </div>
+
+      <Card style={{marginBottom:14}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+          <div><div style={{fontSize:14,fontWeight:600}}>Clics dans le temps</div><div style={{fontSize:12,color:'var(--fg-muted)',marginTop:2}}>{per.label}</div></div>
+        </div>
+        <TimeSeriesChart series={series} height={210} gradId="dt-grad"/>
+      </Card>
+
+      <div style={{display:'grid',gridTemplateColumns:'1.62fr 1fr',gap:14,marginBottom:14}}>
+        <Card>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+            <div><div style={{fontSize:14,fontWeight:600}}>Localisation des clics</div><div style={{fontSize:12,color:'var(--fg-muted)',marginTop:2}}>{cityData.length} villes &middot; {countries.length} pays</div></div>
+          </div>
+          {cityData.length>0?<WorldMap cities={cityData} total={visits.length} height={420}/>:<div style={{height:420,display:'grid',placeItems:'center',color:'var(--fg-subtle)'}}>Pas encore de donnees geo</div>}
+        </Card>
+        <Card>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>Par pays</div>
+          <div style={{fontSize:12,color:'var(--fg-muted)',marginBottom:8}}>Part des visites</div>
+          <div style={{maxHeight:420,overflowY:'auto'}}>
+            {countries.map(c=><MeterRow key={c.key} label={c.key} value={fmt(c.count)} pctVal={pct(c.count,visits.length)}/>)}
+            {countries.length===0&&<div style={{padding:20,color:'var(--fg-subtle)',textAlign:'center'}}>—</div>}
+          </div>
+        </Card>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+        <Card>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>Par appareil</div>
+          <div style={{fontSize:12,color:'var(--fg-muted)',marginBottom:16}}>Repartition des visites</div>
+          {deviceData.length>0?<Donut data={deviceData}/>:<div style={{padding:20,color:'var(--fg-subtle)',textAlign:'center'}}>Pas de donnees</div>}
+        </Card>
+        <Card>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>Par source</div>
+          <div style={{fontSize:12,color:'var(--fg-muted)',marginBottom:8}}>D'ou viennent vos visiteurs</div>
+          <div>
+            {platforms.map(p=><MeterRow key={p.key} label={p.key.charAt(0).toUpperCase()+p.key.slice(1)} value={fmt(p.count)} pctVal={pct(p.count,visits.length)} color={p.key==='instagram'?'var(--accent)':p.key==='tiktok'?'#0A0A0A':p.key==='snapchat'?'var(--orange)':'var(--info)'}/>)}
+            {platforms.length===0&&<div style={{padding:20,color:'var(--fg-subtle)',textAlign:'center'}}>—</div>}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================ APP
+function TopBar({title,subtitle,back}){
+  return(
+    <header style={{height:56,padding:'0 24px',display:'flex',alignItems:'center',gap:14,borderBottom:'1px solid var(--border)',background:'rgb(250 250 249/.85)',backdropFilter:'blur(8px)',position:'sticky',top:0,zIndex:20}}>
+      {back&&<button onClick={back} title="Retour" style={{width:32,height:32,marginLeft:-4,display:'grid',placeItems:'center',borderRadius:8,border:'1px solid var(--border)',background:'#fff',cursor:'pointer',color:'var(--fg-muted)',flexShrink:0}}><i data-lucide="arrow-left" style={{width:16,height:16}}></i></button>}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:15,fontWeight:600,letterSpacing:'-0.01em'}}>{title}</div>
+        {subtitle&&<div style={{fontSize:12,color:'var(--fg-muted)',marginTop:1}}>{subtitle}</div>}
+      </div>
+    </header>
+  );
+}
+
+function App(){
+  const [view,setView]=useState('overview');const [page,setPage]=useState(null);const [period,setPeriod]=useState('7j');
+  useEffect(()=>{if(window.lucide)lucide.createIcons()});
+  function openPage(p){setPage(p);setView('detail');window.scrollTo(0,0)}
+  function back(){setView('overview');setPage(null)}
+  let title,subtitle,backFn=null,screen;
+  if(view==='detail'&&page){title=page.data?.title||page.slug;subtitle='Analytics de la page';backFn=back;screen=<PageDetail page={page} period={period} setPeriod={setPeriod}/>}
+  else{title='Liens';subtitle='Suivi des clics sur vos pages';screen=<LinksOverview period={period} setPeriod={setPeriod} onOpen={openPage}/>}
+  return(
+    <div style={{minHeight:'100vh',maxWidth:1320,margin:'0 auto'}}>
+      <TopBar title={title} subtitle={subtitle} back={backFn}/>
+      {screen}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
