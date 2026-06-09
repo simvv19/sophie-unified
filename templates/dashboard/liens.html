@@ -396,10 +396,19 @@ function dateRange(period){
 
 async function fetchVisits(period,pageId){
   const {from,to}=dateRange(period);
-  let q=sb.from('visits').select('*').gte('created_at',from).lte('created_at',to);
-  if(pageId)q=q.eq('page_id',pageId);
-  const {data}=await q;
-  return data||[];
+  // Supabase caps each response at 1000 rows, so paginate to get them all.
+  const all=[];const CHUNK=1000;let offset=0;
+  while(true){
+    let q=sb.from('visits').select('*').gte('created_at',from).lte('created_at',to)
+      .order('created_at',{ascending:true}).range(offset,offset+CHUNK-1);
+    if(pageId)q=q.eq('page_id',pageId);
+    const {data,error}=await q;
+    if(error||!data||!data.length)break;
+    all.push(...data);
+    if(data.length<CHUNK)break;
+    offset+=CHUNK;
+  }
+  return all;
 }
 
 async function fetchPages(){
@@ -760,8 +769,18 @@ async function renderStatsTab(p, period) {
   const area = document.getElementById("stats_area");
   if (!area) return;
   const range = statDateRange(statPeriod);
-  const {data,error} = await sb.from("visits").select("*").eq("page_id",p.id).gte("created_at",range.from).lte("created_at",range.to);
-  const visits = data || [];
+  // Paginate past Supabase's 1000-row cap
+  const visits = [];
+  let _off = 0;
+  while (true) {
+    const {data,error} = await sb.from("visits").select("*").eq("page_id",p.id)
+      .gte("created_at",range.from).lte("created_at",range.to)
+      .order("created_at",{ascending:true}).range(_off,_off+999);
+    if (error || !data || !data.length) break;
+    visits.push(...data);
+    if (data.length < 1000) break;
+    _off += 1000;
+  }
   const views = visits.filter(v=>v.type==="view");
   const clicks = visits.filter(v=>v.type==="click");
   const convRate = views.length ? Math.round((clicks.length/views.length)*1000)/10 : 0;
