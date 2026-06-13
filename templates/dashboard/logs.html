@@ -1,0 +1,253 @@
+{% raw %}<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<link rel="icon" type="image/svg+xml" href="/static/assets/logo-conquerorz.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ConquerorZ · Logs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#FAFAF9; --card:#FFFFFF; --border:#E8E6E1; --border-strong:#D4D1CB;
+    --ink:#16150F; --muted:#615F58; --subtle:#94908A; --muted-bg:#F4F3F1;
+    --accent:#3B9DF7; --accent-deep:#1F7BD6; --accent-soft:#E4F1FE;
+    --red:#E5484D; --red-bg:#FFF0F0;
+    --green:#15803d; --green-bg:#ecfdf5;
+    --radius:10px;
+    --shadow-lg:0 12px 32px rgba(0,0,0,0.10);
+  }
+  * { box-sizing:border-box; margin:0; }
+  html,body { background:var(--bg); }
+  body { font-family:'Schibsted Grotesk',system-ui,sans-serif; color:var(--ink); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  .layout { max-width:1040px; margin:0 auto; padding:32px 28px 64px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px; gap:16px; }
+  .header h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; }
+  .header .sub { color:var(--subtle); font-size:13px; }
+  .toolbar { display:flex; align-items:center; gap:10px; margin:18px 0 12px; }
+  .toolbar .search { flex:1; max-width:320px; position:relative; }
+  .toolbar .search input { width:100%; font-family:inherit; font-size:13px; padding:8px 12px 8px 34px; border-radius:8px; border:1px solid var(--border-strong); background:var(--card); color:var(--ink); outline:none; }
+  .toolbar .search input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,157,247,0.15); }
+  .toolbar .search svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--subtle); }
+  .toolbar .count { margin-left:auto; font-size:12px; color:var(--subtle); }
+  .btn { font-family:inherit; font-size:12px; font-weight:600; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--ink); cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .btn:hover { border-color:var(--border-strong); background:var(--muted-bg); }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.primary:hover { background:var(--accent-deep); }
+  .btn svg { width:14px; height:14px; }
+
+  .sheet-wrap { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  table.sheet { width:100%; border-collapse:collapse; table-layout:fixed; }
+  table.sheet th { text-align:left; padding:10px 14px; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; color:var(--subtle); font-weight:700; background:var(--muted-bg); border-bottom:1px solid var(--border); }
+  table.sheet th.col-idx { width:42px; text-align:center; }
+  table.sheet th.col-act { width:88px; }
+  table.sheet td { border-bottom:1px solid var(--border); border-right:1px solid var(--border); padding:0; vertical-align:middle; }
+  table.sheet td:last-child { border-right:0; }
+  table.sheet tr:last-child td { border-bottom:0; }
+  td.idx { text-align:center; color:var(--subtle); font-size:12px; font-variant-numeric:tabular-nums; background:var(--muted-bg); border-right:1px solid var(--border); user-select:none; }
+  td input.cell { width:100%; border:0; outline:0; background:transparent; font-family:inherit; font-size:13.5px; color:var(--ink); padding:11px 14px; }
+  td input.cell::placeholder { color:#C7C4BE; }
+  td.editing, td input.cell:focus { background:var(--accent-soft); }
+  td input.cell:focus { box-shadow:inset 0 0 0 2px var(--accent); }
+  td.pass-cell { position:relative; }
+  td.pass-cell input.cell { padding-right:30px; font-family:ui-monospace,'SF Mono',Menlo,monospace; letter-spacing:0.02em; }
+  td.pass-cell.masked input.cell { -webkit-text-security:disc; text-security:disc; }
+  td.pass-cell .eye { position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:0; cursor:pointer; color:var(--subtle); padding:2px; display:flex; }
+  td.pass-cell .eye:hover { color:var(--ink); }
+  td.pass-cell .eye svg { width:15px; height:15px; }
+  td.act { text-align:center; }
+  .row-actions { display:flex; gap:2px; justify-content:center; }
+  .row-actions button { background:none; border:0; cursor:pointer; padding:6px; border-radius:6px; color:var(--subtle); display:flex; }
+  .row-actions button svg { width:15px; height:15px; }
+  .row-actions button:hover { background:var(--muted-bg); color:var(--ink); }
+  .row-actions button.del:hover { background:var(--red-bg); color:var(--red); }
+  .row-actions button.ok { color:var(--green); }
+  tr.saving td.idx::after { content:""; }
+  .addrow { display:flex; }
+  .addrow button { width:100%; border:0; background:var(--card); color:var(--accent-deep); font-family:inherit; font-weight:600; font-size:13px; padding:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; border-top:1px solid var(--border); }
+  .addrow button:hover { background:var(--accent-soft); }
+  .addrow button svg { width:15px; height:15px; }
+  .empty { text-align:center; padding:44px; color:var(--subtle); font-size:14px; }
+  .toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:9px 18px; border-radius:10px; font-size:13px; font-weight:500; opacity:0; pointer-events:none; transition:all .25s; z-index:300; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .hint { font-size:12px; color:var(--subtle); margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="header">
+    <div>
+      <h1>Logs</h1>
+      <div class="sub">Tes identifiants : nom, username et mot de passe. Clique sur une cellule pour l'&eacute;diter.</div>
+    </div>
+    <button class="btn primary" id="addBtnTop">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      Ajouter une ligne
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search" placeholder="Rechercher (nom, username...)" />
+    </div>
+    <span class="count" id="count">0 ligne</span>
+  </div>
+
+  <div class="sheet-wrap">
+    <table class="sheet">
+      <thead>
+        <tr>
+          <th class="col-idx">#</th>
+          <th>Nom</th>
+          <th>Username</th>
+          <th>Mot de passe</th>
+          <th class="col-act"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none;">Aucune ligne pour l'instant. Clique sur &laquo; Ajouter une ligne &raquo;.</div>
+    <div class="addrow"><button id="addBtn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      Ajouter une ligne
+    </button></div>
+  </div>
+  <div class="hint">💾 Enregistrement automatique &agrave; chaque modification.</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let rows = [];
+const saveTimers = {};
+
+const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/><path d="M6.61 6.61A18.5 18.5 0 0 0 2 12s3.5 7 10 7a9.12 9.12 0 0 0 4.12-.94"/></svg>';
+const COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1600);
+}
+
+async function load(){
+  const r = await fetch('/api/logs');
+  const j = await r.json();
+  rows = j.logs || [];
+  render();
+}
+
+function render(){
+  const q = (document.getElementById('search').value || '').toLowerCase().trim();
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+  const filtered = q ? rows.filter(r =>
+    (r.name||'').toLowerCase().includes(q) ||
+    (r.username||'').toLowerCase().includes(q)) : rows;
+
+  document.getElementById('count').textContent = rows.length + (rows.length>1?' lignes':' ligne');
+
+  if(!filtered.length){
+    tbody.innerHTML='';
+    empty.style.display = rows.length ? 'none' : 'block';
+    if(q && !filtered.length){ empty.style.display='block'; empty.textContent='Aucun résultat pour « '+q+' ».'; }
+    return;
+  }
+  empty.style.display='none';
+
+  tbody.innerHTML = filtered.map((r,i)=>`
+    <tr data-id="${r.id}">
+      <td class="idx">${i+1}</td>
+      <td><input class="cell" data-field="name" value="${esc(r.name)}" placeholder="Nom..." /></td>
+      <td><input class="cell" data-field="username" value="${esc(r.username)}" placeholder="username..." /></td>
+      <td class="pass-cell masked">
+        <input class="cell" data-field="password" value="${esc(r.password)}" placeholder="mot de passe..." autocomplete="off" />
+        <button class="eye" title="Afficher / masquer">${EYE_OFF}</button>
+      </td>
+      <td class="act">
+        <div class="row-actions">
+          <button class="copy" title="Copier le mot de passe">${COPY}</button>
+          <button class="del" title="Supprimer la ligne">${TRASH}</button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  // Wire inputs (auto-save on change/blur)
+  tbody.querySelectorAll('input.cell').forEach(inp=>{
+    inp.addEventListener('input', ()=>scheduleSave(inp));
+    inp.addEventListener('blur', ()=>flushSave(inp));
+    inp.addEventListener('keydown', e=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+    });
+  });
+  // Eye toggles
+  tbody.querySelectorAll('.pass-cell .eye').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const cell=btn.closest('.pass-cell');
+      const masked=cell.classList.toggle('masked');
+      btn.innerHTML = masked ? EYE_OFF : EYE;
+    });
+  });
+  // Copy password
+  tbody.querySelectorAll('.copy').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id=btn.closest('tr').dataset.id;
+      const row=rows.find(x=>x.id===id);
+      try{ await navigator.clipboard.writeText(row?.password||''); toast('Mot de passe copié'); }catch(e){ toast('Copie impossible'); }
+    });
+  });
+  // Delete
+  tbody.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id=btn.closest('tr').dataset.id;
+      if(!confirm('Supprimer cette ligne ?')) return;
+      await fetch('/api/logs/'+id,{method:'DELETE'});
+      rows = rows.filter(x=>x.id!==id);
+      render(); toast('Ligne supprimée');
+    });
+  });
+}
+
+function scheduleSave(inp){
+  const tr=inp.closest('tr'); const id=tr.dataset.id; const field=inp.dataset.field;
+  const row=rows.find(x=>x.id===id); if(row) row[field]=inp.value;
+  clearTimeout(saveTimers[id+field]);
+  saveTimers[id+field]=setTimeout(()=>doSave(id,field,inp.value),700);
+}
+function flushSave(inp){
+  const tr=inp.closest('tr'); const id=tr.dataset.id; const field=inp.dataset.field;
+  clearTimeout(saveTimers[id+field]);
+  doSave(id,field,inp.value);
+}
+async function doSave(id,field,value){
+  try{
+    await fetch('/api/logs/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})});
+  }catch(e){ toast('Erreur de sauvegarde'); }
+}
+
+async function addRow(){
+  const r=await fetch('/api/logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'',username:'',password:'',position:rows.length})});
+  const j=await r.json();
+  if(j.ok && j.log){
+    rows.push(j.log);
+    document.getElementById('search').value='';
+    render();
+    // focus the first cell of the new row
+    const tr=document.querySelector(`tr[data-id="${j.log.id}"]`);
+    if(tr){ tr.scrollIntoView({block:'center',behavior:'smooth'}); tr.querySelector('input.cell')?.focus(); }
+  } else { toast(j.error||'Erreur'); }
+}
+
+document.getElementById('addBtn').onclick=addRow;
+document.getElementById('addBtnTop').onclick=addRow;
+document.getElementById('search').addEventListener('input', render);
+load();
+</script>
+</body>
+</html>{% endraw %}

@@ -116,7 +116,7 @@ def get_current_user():
 
 def _load_permissions(email):
     """Fetch services + role from members table (cached in session for 5 min)."""
-    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","warmup","phantom","music"]
+    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","warmup","logs","phantom","music"]
     if email == ADMIN_EMAIL:
         return {"services": ["landing", "dashboard", "crea"], "pages": ALL_PAGES, "is_admin": True, "name": "Admin"}
     cached = session.get("_perms")
@@ -394,6 +394,7 @@ DASHBOARD_PAGES = {
     "proxy": "dashboard/proxy.html",
     "mails-va": "dashboard/mails-va.html",
     "members": "dashboard/members.html",
+    "logs": "dashboard/logs.html",
 }
 
 @app.route("/dashboard")
@@ -1620,6 +1621,62 @@ def va_accounts_update(aid):
 def va_accounts_delete(aid):
     r = requests.delete(f"{SUPABASE_URL}/rest/v1/va_accounts",
                         params={"id": f"eq.{aid}"},
+                        headers=_sb_headers(), timeout=10)
+    if r.status_code in (200, 204):
+        return jsonify(ok=True)
+    return jsonify(error="Erreur suppression"), 500
+
+
+# ----- Logs (nom / username / mot de passe) -----
+@app.route("/api/logs")
+@require_auth
+@require_service("dashboard")
+def logs_list():
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/logs",
+                     params={"select": "*", "order": "position.asc,created_at.asc"},
+                     headers=_sb_headers(), timeout=10)
+    return jsonify(logs=r.json() if r.status_code == 200 else [])
+
+@app.route("/api/logs", methods=["POST"])
+@require_auth
+@require_service("dashboard")
+def logs_create():
+    d = request.json or {}
+    row = {
+        "name": (d.get("name") or "").strip(),
+        "username": (d.get("username") or "").strip(),
+        "password": (d.get("password") or "").strip(),
+        "position": d.get("position", 0),
+    }
+    r = requests.post(f"{SUPABASE_URL}/rest/v1/logs",
+                      json=row, headers=_sb_headers(), timeout=10)
+    if r.status_code in (200, 201):
+        return jsonify(ok=True, log=r.json()[0] if r.json() else {})
+    return jsonify(error="Erreur création"), 500
+
+@app.route("/api/logs/<lid>", methods=["PATCH"])
+@require_auth
+@require_service("dashboard")
+def logs_update(lid):
+    d = request.json or {}
+    patch = {}
+    for k in ("name", "username", "password", "position"):
+        if k in d:
+            patch[k] = d[k]
+    patch["updated_at"] = datetime.utcnow().isoformat()
+    r = requests.patch(f"{SUPABASE_URL}/rest/v1/logs",
+                       params={"id": f"eq.{lid}"},
+                       json=patch, headers=_sb_headers(), timeout=10)
+    if r.status_code in (200, 201, 204):
+        return jsonify(ok=True)
+    return jsonify(error="Erreur mise à jour"), 500
+
+@app.route("/api/logs/<lid>", methods=["DELETE"])
+@require_auth
+@require_service("dashboard")
+def logs_delete(lid):
+    r = requests.delete(f"{SUPABASE_URL}/rest/v1/logs",
+                        params={"id": f"eq.{lid}"},
                         headers=_sb_headers(), timeout=10)
     if r.status_code in (200, 204):
         return jsonify(ok=True)
