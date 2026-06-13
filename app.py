@@ -1646,6 +1646,7 @@ def logs_create():
         "name": (d.get("name") or "").strip(),
         "username": (d.get("username") or "").strip(),
         "password": (d.get("password") or "").strip(),
+        "va": d.get("va") or "VA1",
         "position": d.get("position", 0),
     }
     r = requests.post(f"{SUPABASE_URL}/rest/v1/logs",
@@ -1660,7 +1661,7 @@ def logs_create():
 def logs_update(lid):
     d = request.json or {}
     patch = {}
-    for k in ("name", "username", "password", "position"):
+    for k in ("name", "username", "password", "va", "position"):
         if k in d:
             patch[k] = d[k]
     patch["updated_at"] = datetime.utcnow().isoformat()

@@ -25,6 +25,15 @@
   .header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px; gap:16px; }
   .header h1 { font-size:24px; font-weight:700; letter-spacing:-0.02em; }
   .header .sub { color:var(--subtle); font-size:13px; }
+  .va-tabs { display:inline-flex; background:var(--muted-bg); border:1px solid var(--border); border-radius:9px; padding:3px; gap:2px; }
+  .va-tabs button { font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 16px; border:0; background:transparent; color:var(--muted); border-radius:7px; cursor:pointer; }
+  .va-tabs button.active { background:var(--card); color:var(--accent-deep); box-shadow:0 1px 3px rgba(0,0,0,.07); }
+  .va-tabs button .n { font-size:11px; color:var(--subtle); margin-left:5px; font-weight:500; }
+  .va-tabs button.active .n { color:var(--accent); }
+  td.va-cell select { width:100%; border:0; outline:0; background:transparent; font-family:inherit; font-size:13px; font-weight:600; color:var(--accent-deep); padding:10px 14px; cursor:pointer; -webkit-appearance:none; appearance:none; }
+  td.va-cell { position:relative; }
+  td.va-cell::after { content:"▾"; position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--subtle); pointer-events:none; font-size:11px; }
+  table.sheet th.col-va { width:96px; }
   .toolbar { display:flex; align-items:center; gap:10px; margin:18px 0 12px; }
   .toolbar .search { flex:1; max-width:320px; position:relative; }
   .toolbar .search input { width:100%; font-family:inherit; font-size:13px; padding:8px 12px 8px 34px; border-radius:8px; border:1px solid var(--border-strong); background:var(--card); color:var(--ink); outline:none; }
@@ -88,6 +97,11 @@
   </div>
 
   <div class="toolbar">
+    <div class="va-tabs" id="vaTabs">
+      <button data-va="all" class="active">Tous</button>
+      <button data-va="VA1">VA 1<span class="n" id="cVA1">0</span></button>
+      <button data-va="VA2">VA 2<span class="n" id="cVA2">0</span></button>
+    </div>
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input id="search" placeholder="Rechercher (nom, username...)" />
@@ -103,6 +117,7 @@
           <th>Nom</th>
           <th>Username</th>
           <th>Mot de passe</th>
+          <th class="col-va">VA</th>
           <th class="col-act"></th>
         </tr>
       </thead>
@@ -121,6 +136,7 @@
 
 <script>
 let rows = [];
+let currentVA = 'all';
 const saveTimers = {};
 
 const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -147,16 +163,22 @@ function render(){
   const q = (document.getElementById('search').value || '').toLowerCase().trim();
   const tbody = document.getElementById('tbody');
   const empty = document.getElementById('empty');
-  const filtered = q ? rows.filter(r =>
-    (r.name||'').toLowerCase().includes(q) ||
-    (r.username||'').toLowerCase().includes(q)) : rows;
 
-  document.getElementById('count').textContent = rows.length + (rows.length>1?' lignes':' ligne');
+  // VA counters
+  document.getElementById('cVA1').textContent = rows.filter(r=>(r.va||'VA1')==='VA1').length;
+  document.getElementById('cVA2').textContent = rows.filter(r=>(r.va||'VA1')==='VA2').length;
+
+  let filtered = currentVA==='all' ? rows : rows.filter(r=>(r.va||'VA1')===currentVA);
+  if(q) filtered = filtered.filter(r =>
+    (r.name||'').toLowerCase().includes(q) ||
+    (r.username||'').toLowerCase().includes(q));
+
+  document.getElementById('count').textContent = filtered.length + (filtered.length>1?' lignes':' ligne');
 
   if(!filtered.length){
     tbody.innerHTML='';
-    empty.style.display = rows.length ? 'none' : 'block';
-    if(q && !filtered.length){ empty.style.display='block'; empty.textContent='Aucun résultat pour « '+q+' ».'; }
+    empty.style.display='block';
+    empty.textContent = q ? 'Aucun résultat pour « '+q+' ».' : 'Aucune ligne. Clique sur « Ajouter une ligne ».';
     return;
   }
   empty.style.display='none';
@@ -169,6 +191,12 @@ function render(){
       <td class="pass-cell masked">
         <input class="cell" data-field="password" value="${esc(r.password)}" placeholder="mot de passe..." autocomplete="off" />
         <button class="eye" title="Afficher / masquer">${EYE_OFF}</button>
+      </td>
+      <td class="va-cell">
+        <select data-field="va">
+          <option value="VA1"${(r.va||'VA1')==='VA1'?' selected':''}>VA 1</option>
+          <option value="VA2"${(r.va||'VA1')==='VA2'?' selected':''}>VA 2</option>
+        </select>
       </td>
       <td class="act">
         <div class="row-actions">
@@ -184,6 +212,15 @@ function render(){
     inp.addEventListener('blur', ()=>flushSave(inp));
     inp.addEventListener('keydown', e=>{
       if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+    });
+  });
+  // VA dropdown per row (auto-save + re-filter)
+  tbody.querySelectorAll('td.va-cell select').forEach(sel=>{
+    sel.addEventListener('change', async ()=>{
+      const id=sel.closest('tr').dataset.id;
+      const row=rows.find(x=>x.id===id); if(row) row.va=sel.value;
+      await doSave(id,'va',sel.value);
+      render();
     });
   });
   // Eye toggles
@@ -232,7 +269,8 @@ async function doSave(id,field,value){
 }
 
 async function addRow(){
-  const r=await fetch('/api/logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'',username:'',password:'',position:rows.length})});
+  const va = currentVA==='all' ? 'VA1' : currentVA;
+  const r=await fetch('/api/logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'',username:'',password:'',va:va,position:rows.length})});
   const j=await r.json();
   if(j.ok && j.log){
     rows.push(j.log);
@@ -247,6 +285,14 @@ async function addRow(){
 document.getElementById('addBtn').onclick=addRow;
 document.getElementById('addBtnTop').onclick=addRow;
 document.getElementById('search').addEventListener('input', render);
+document.getElementById('vaTabs').querySelectorAll('button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    currentVA=b.dataset.va;
+    document.getElementById('vaTabs').querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    render();
+  });
+});
 load();
 </script>
 </body>
