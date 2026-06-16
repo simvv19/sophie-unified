@@ -47,6 +47,10 @@ SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 ADMIN_EMAIL = "simcharbo6@gmail.com"
 
+# Landing/analytics Supabase project (separate from the backend one above).
+# Landing photos live in its public `landing_photos` bucket.
+LANDING_SUPABASE_URL = os.environ.get("LANDING_SUPABASE_URL", "https://sfaxubipmidysfvtfvdx.supabase.co")
+
 
 @app.after_request
 def add_no_cache_headers(resp):
@@ -1908,12 +1912,34 @@ def landing_domain_router():
     host = request.host.split(":")[0].lower()
     if host not in LANDING_DOMAINS:
         return None  # normal conquerorz.co flow
-    # Let API and static asset routes reach their real handlers (e.g. /api/geo)
-    if request.path.startswith("/api/") or request.path.startswith("/static/"):
+    # Let API, static and image-proxy routes reach their real handlers
+    if (request.path.startswith("/api/") or request.path.startswith("/static/")
+            or request.path.startswith("/img/")):
         return None
     # Serve as raw HTML (not Jinja2) to avoid template parsing issues
     html_path = ROOT / "templates" / "landing_public.html"
     return send_file(html_path, mimetype="text/html")
+
+
+@app.route("/img/<path:photo_path>")
+def landing_image(photo_path):
+    """Proxy landing photos behind our own (Cloudflare-cached) domain.
+
+    The browser/Cloudflare caches these for a year, so Supabase Storage only
+    ever serves each image on a cache-miss instead of on every page view —
+    which is what blew past the cached-egress quota.
+    """
+    try:
+        url = f"{LANDING_SUPABASE_URL}/storage/v1/object/public/landing_photos/{photo_path}"
+        r = requests.get(url, timeout=10)
+        if r.status_code != 200:
+            return "", r.status_code
+        resp = make_response(r.content)
+        resp.headers["Content-Type"] = r.headers.get("Content-Type", "image/jpeg")
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
+    except Exception:
+        return "", 502
 
 
 @app.route("/api/geo")

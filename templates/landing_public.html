@@ -953,6 +953,9 @@ async function trackVisit(pageId, slug, type) {
 
 // ============================================================ PUBLIC LANDING
 async function showLanding(slug) {
+  // From Instagram/FB/Snap in-app browser → reopen this page in Safari/Chrome.
+  // Fires before render; if the OS blocks it, we still render here as a fallback.
+  maybeAutoEscape();
   const { data, error } = await sb.from("landing_pages").select("id,slug,data,photo_path").eq("slug", slug).maybeSingle();
   if (error || !data) {
     app.className = "landing-bg";
@@ -1387,6 +1390,30 @@ function detectEnv() {
   const isLine = /Line\//.test(ua);
   const isInApp = isInstagram || isFacebook || isTikTok || isSnapchat || isMessenger || isLine;
   return { isIOS, isAndroid, isInApp, isInstagram, isFacebook, isTikTok, isSnapchat };
+}
+
+// Auto-reopen THIS landing page in the real browser (Safari/Chrome) when it
+// loads inside an in-app browser (Instagram, Facebook, Snapchat, Messenger…).
+// TikTok blocks the x-safari scheme, so it keeps using the 18+ overlay instead.
+function maybeAutoEscape() {
+  const env = detectEnv();
+  if (!env.isInApp) return false;
+  if (env.isTikTok) return false;
+  if (sessionStorage.getItem("autoEscaped")) return false;
+  const full = location.host + location.pathname + location.search;
+  try {
+    sessionStorage.setItem("autoEscaped", "1");
+    if (env.isIOS) {
+      location.href = "x-safari-https://" + full;
+      return true;
+    }
+    if (env.isAndroid) {
+      const fallback = encodeURIComponent("https://" + full);
+      location.href = "intent://" + full + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + fallback + ";end";
+      return true;
+    }
+  } catch (e) {}
+  return false;
 }
 
 function smartOpen(url, env) {
