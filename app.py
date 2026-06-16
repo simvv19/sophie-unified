@@ -5,6 +5,7 @@ Sophie Unified — Landing + Dashboard + Crea in one Flask app.
 import io
 import json
 import os
+import re
 import secrets
 import shutil
 import threading
@@ -1916,9 +1917,82 @@ def landing_domain_router():
     if (request.path.startswith("/api/") or request.path.startswith("/static/")
             or request.path.startswith("/img/")):
         return None
+    # In-app browsers (Instagram/FB/Snap…) get an instant lightweight "escape"
+    # page that bounces them to the real browser before the heavy landing loads.
+    # Same links for everyone once in the real browser — no bot/moderation cloaking.
+    ua = request.headers.get("User-Agent", "")
+    seg = request.path.strip("/")
+    real_landing = seg and seg != "admin" and seg != "index.html" and not seg.startswith("go/")
+    if real_landing and _is_inapp_browser(ua):
+        target = f"https://{request.host}{request.full_path}".rstrip("?")
+        return make_response(_render_escape_page(target))
     # Serve as raw HTML (not Jinja2) to avoid template parsing issues
     html_path = ROOT / "templates" / "landing_public.html"
     return send_file(html_path, mimetype="text/html")
+
+
+# In-app browser detection (TikTok excluded — it uses the 18+ overlay instead,
+# and the x-safari/extbrowser schemes don't work inside TikTok anyway).
+_INAPP_UA_RE = re.compile(r"Instagram|FBAN|FBAV|Snapchat|Messenger|Line/", re.I)
+_TIKTOK_UA_RE = re.compile(r"BytedanceWebview|TikTok|musical_ly", re.I)
+
+def _is_inapp_browser(ua):
+    if not ua or _TIKTOK_UA_RE.search(ua):
+        return False
+    return bool(_INAPP_UA_RE.search(ua))
+
+def _render_escape_page(target):
+    safe = (target or "").replace("\\", "").replace('"', "%22").replace("<", "").replace(">", "")
+    return """<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Ouvre dans ton navigateur</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100vh;min-height:100dvh}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+background:linear-gradient(160deg,#0f1830 0%,#11294a 55%,#0e3a63 100%);
+color:#fff;display:flex;align-items:center;justify-content:center;padding:28px 22px}
+.card{width:100%;max-width:360px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}
+.avatar{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#3B9DF7,#1565B8);
+display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 14px 36px -12px rgba(59,157,247,.6)}
+h1{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.lead{font-size:15px;line-height:1.5;color:rgba(255,255,255,.78)}
+.steps{text-align:left;list-style:none;display:flex;flex-direction:column;gap:12px;width:100%}
+.steps li{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+border-radius:12px;padding:13px 15px;font-size:14px;line-height:1.4;color:rgba(255,255,255,.9)}
+.menu{font-weight:800;letter-spacing:2px;padding:0 6px}
+.foot{font-size:11px;color:rgba(255,255,255,.4);margin-top:6px}
+b{color:#fff}
+</style></head>
+<body>
+<main class="card">
+<div class="avatar">✨</div>
+<h1>Un instant…</h1>
+<p class="lead">Cette page s'ouvre mieux dans ton navigateur. Redirection en cours…</p>
+<ol class="steps">
+<li>Touche le menu <span class="menu">•••</span> en haut de l'écran</li>
+<li>Choisis <b>« Ouvrir dans le navigateur »</b></li>
+</ol>
+<div class="foot">Continue dans ton navigateur pour voir la page.</div>
+</main>
+<script>
+(function(){
+  var ua=navigator.userAgent||"";
+  var target="__TARGET__";
+  try{
+    if(/Instagram/.test(ua)){
+      location.href="instagram://extbrowser/?url="+encodeURIComponent(target);
+    }else if(/Android/.test(ua)){
+      var hp=target.replace(/^https?:\\/\\//,"");
+      location.href="intent://"+hp+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(target)+";end";
+    }
+  }catch(e){}
+})();
+</script>
+</body></html>""".replace("__TARGET__", safe)
 
 
 @app.route("/img/<path:photo_path>")
