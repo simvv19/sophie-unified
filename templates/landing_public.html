@@ -3,6 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<script>
+/* In-app browser escape — runs INSTANTLY, before anything else loads.
+   Instagram exposes its own scheme to reopen a URL in the real browser (Safari/Chrome):
+   instagram://extbrowser/?url=<encoded>. This is the method that actually works on iOS. */
+(function () {
+  try {
+    var ua = navigator.userAgent || "";
+    var seg = location.pathname.replace(/^\/+/, "");
+    if (seg === "" || seg === "admin" || seg === "index.html" || seg.indexOf("go/") === 0) return;
+    if (sessionStorage.getItem("autoEscaped")) return;
+    var target = location.href;
+    if (/Instagram/.test(ua)) {
+      sessionStorage.setItem("autoEscaped", "1");
+      location.href = "instagram://extbrowser/?url=" + encodeURIComponent(target);
+    } else if (/Android/.test(ua) && /(FBAN|FBAV|Snapchat|Line\/|Messenger)/.test(ua)) {
+      sessionStorage.setItem("autoEscaped", "1");
+      var hostPath = location.host + location.pathname + location.search;
+      location.href = "intent://" + hostPath + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + encodeURIComponent(target) + ";end";
+    }
+  } catch (e) {}
+})();
+</script>
 <title>Sophie</title>
 <meta name="description" content="Page personnelle de Sophie.">
 <meta name="robots" content="index,follow">
@@ -1396,20 +1418,22 @@ function detectEnv() {
 // loads inside an in-app browser (Instagram, Facebook, Snapchat, Messenger…).
 // TikTok blocks the x-safari scheme, so it keeps using the 18+ overlay instead.
 function maybeAutoEscape() {
+  // Belt-and-suspenders fallback to the early <head> script.
   const env = detectEnv();
   if (!env.isInApp) return false;
   if (env.isTikTok) return false;
   if (sessionStorage.getItem("autoEscaped")) return false;
-  const full = location.host + location.pathname + location.search;
+  const target = location.href;
   try {
     sessionStorage.setItem("autoEscaped", "1");
-    if (env.isIOS) {
-      location.href = "x-safari-https://" + full;
+    if (env.isInstagram) {
+      // Instagram's own scheme to reopen in the real browser (works on iOS).
+      location.href = "instagram://extbrowser/?url=" + encodeURIComponent(target);
       return true;
     }
     if (env.isAndroid) {
-      const fallback = encodeURIComponent("https://" + full);
-      location.href = "intent://" + full + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + fallback + ";end";
+      const hostPath = location.host + location.pathname + location.search;
+      location.href = "intent://" + hostPath + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + encodeURIComponent(target) + ";end";
       return true;
     }
   } catch (e) {}
