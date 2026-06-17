@@ -148,6 +148,8 @@
             <label class="pg-check"><input type="checkbox" value="mailsva" /><span>Mails VA</span></label>
             <label class="pg-check"><input type="checkbox" value="comptesva" /><span>Comptes VA</span></label>
             <label class="pg-check"><input type="checkbox" value="warmup" /><span>Warm-up</span></label>
+            <label class="pg-check"><input type="checkbox" value="logs" /><span>Logs</span></label>
+            <label class="pg-check"><input type="checkbox" value="simulateur-insta" /><span>Simu Insta</span></label>
           </div>
           <div class="pages-group-title">Cr&eacute;a</div>
           <div class="pages-group">
@@ -178,6 +180,8 @@ const ALL_PAGES = [
   {id:'mailsva',label:'Mails VA',group:'dashboard'},
   {id:'comptesva',label:'Comptes VA',group:'dashboard'},
   {id:'warmup',label:'Warm-up',group:'dashboard'},
+  {id:'logs',label:'Logs',group:'dashboard'},
+  {id:'simulateur-insta',label:'Simu Insta',group:'dashboard'},
   {id:'phantom',label:'Phantom',group:'crea'},
   {id:'music',label:'Musique',group:'crea'},
 ];
@@ -267,7 +271,7 @@ document.getElementById('saveBtn').onclick=async()=>{
   // Derive services from pages for backward compat
   const services=[];
   if(pages.some(p=>['pages','domaines'].includes(p))) services.push('landing');
-  if(pages.some(p=>['acq','flotte','emails','ads','proxy','mailsva','comptesva'].includes(p))) services.push('dashboard');
+  if(pages.some(p=>['acq','flotte','emails','ads','proxy','mailsva','comptesva','warmup','logs','simulateur-insta'].includes(p))) services.push('dashboard');
   if(pages.some(p=>['phantom','music'].includes(p))) services.push('crea');
 
   if(!name||!email){showMsg('Nom et email requis','err');return;}
