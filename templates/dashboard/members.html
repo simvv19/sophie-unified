@@ -228,8 +228,8 @@ function applyTheme(t){document.documentElement.setAttribute('data-theme',t);doc
 applyTheme(localStorage.getItem(THEME_KEY)||'light');
 document.getElementById('themeToggle').onclick=()=>{const c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';localStorage.setItem(THEME_KEY,c);applyTheme(c);};
 
-const ALL_PAGES = ['acquisition','flotte','emails','tasks','strategies','ads','proxy','mails','members'];
-const PAGE_LABEL = { acquisition:'Acquisition', flotte:'Flotte', emails:'Emails', tasks:'Tâches', strategies:'Stratégies', ads:'Ads', proxy:'Proxy', mails:'Mails VA', members:'Membres' };
+const ALL_PAGES = ['acquisition','flotte','emails','tasks','strategies','ads','proxy','mails','logs','simulateur-insta','members'];
+const PAGE_LABEL = { acquisition:'Acquisition', flotte:'Flotte', emails:'Emails', tasks:'Tâches', strategies:'Stratégies', ads:'Ads', proxy:'Proxy', mails:'Mails VA', logs:'Logs', 'simulateur-insta':'Simu Insta', members:'Membres' };
 let members = [];
 let workspaces = [];
 
