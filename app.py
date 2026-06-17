@@ -121,7 +121,7 @@ def get_current_user():
 
 def _load_permissions(email):
     """Fetch services + role from members table (cached in session for 5 min)."""
-    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","warmup","logs","phantom","music"]
+    ALL_PAGES = ["pages","domaines","acq","flotte","emails","ads","proxy","mailsva","comptesva","warmup","logs","simulateur-insta","phantom","music"]
     if email == ADMIN_EMAIL:
         return {"services": ["landing", "dashboard", "crea"], "pages": ALL_PAGES, "is_admin": True, "name": "Admin"}
     cached = session.get("_perms")
@@ -400,6 +400,7 @@ DASHBOARD_PAGES = {
     "mails-va": "dashboard/mails-va.html",
     "members": "dashboard/members.html",
     "logs": "dashboard/logs.html",
+    "simulateur-insta": "dashboard/simulateur-insta.html",
 }
 
 @app.route("/dashboard")
@@ -419,7 +420,7 @@ def dashboard_page(page):
     if not template:
         return "Page not found", 404
     # Pages with inline React/JSX must bypass Jinja ({{ }} conflict)
-    if page in ("liens",):
+    if page in ("liens", "simulateur-insta"):
         return send_file(ROOT / "templates" / template, mimetype="text/html")
     return render_template(template,
                            supabase_url=SUPABASE_URL,

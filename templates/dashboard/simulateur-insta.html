@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur — Création de compte Instagram (entraînement VA)</title>
+<style>
+  :root{ --ig-blue:#0095f6; --ink:#1a1a1a; --muted:#8e8e8e; --line:#dbdbdb; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+        background:#11131a; color:var(--ink); display:flex; min-height:100vh;
+        align-items:center; justify-content:center; gap:28px; flex-wrap:wrap; padding:24px; }
+  /* phone frame */
+  .phone{ width:360px; height:740px; background:#fff; border-radius:38px; position:relative;
+          box-shadow:0 0 0 11px #000, 0 24px 60px rgba(0,0,0,.6); overflow:hidden; }
+  .statusbar{ height:30px; display:flex; align-items:center; justify-content:space-between;
+              padding:0 18px; font-size:12px; color:#000; }
+  .screen{ position:absolute; inset:30px 0 0 0; padding:22px 22px 18px; display:none;
+           flex-direction:column; overflow-y:auto; }
+  .screen.active{ display:flex; }
+  .logo{ text-align:center; font-family:"Segoe Script","Snell Roundhand",cursive; font-size:34px;
+         margin:6px 0 18px; }
+  h2{ font-size:22px; margin:6px 0 6px; }
+  p.sub{ color:var(--muted); font-size:14px; margin:0 0 18px; line-height:1.4; }
+  input{ width:100%; padding:13px 12px; border:1px solid var(--line); border-radius:10px;
+         font-size:15px; background:#fafafa; margin-bottom:12px; outline:none; }
+  input:focus{ border-color:#a8a8a8; }
+  .btn{ width:100%; padding:13px; border:none; border-radius:10px; font-size:15px; font-weight:600;
+        background:var(--ig-blue); color:#fff; cursor:pointer; margin:4px 0; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn.ghost{ background:#efefef; color:#000; }
+  .btn.link{ background:none; color:var(--ig-blue); font-weight:600; }
+  .spacer{ flex:1; }
+  .center{ text-align:center; }
+  .hero{ width:100%; height:180px; border-radius:14px; margin:8px 0 14px;
+         background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);
+         display:flex; align-items:center; justify-content:center; color:#fff; font-size:46px; }
+  .btn.pill{ border-radius:24px; }
+  .collage{ height:200px; display:flex; gap:6px; justify-content:center; align-items:center; margin:14px 0 4px; }
+  .collage div{ width:56px; border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,.12); }
+  .collage .c1{ height:96px; background:linear-gradient(135deg,#ff5f9e,#ffa64d); }
+  .collage .c2{ height:140px; background:linear-gradient(135deg,#36d1dc,#5b86e5); transform:translateY(8px); }
+  .collage .c3{ height:170px; background:linear-gradient(135deg,#f7971e,#ffd200); z-index:2; }
+  .collage .c4{ height:140px; background:linear-gradient(135deg,#56ab2f,#a8e063); transform:translateY(8px); }
+  .collage .c5{ height:96px; background:linear-gradient(135deg,#9d50bb,#6e48aa); }
+  .meta{ text-align:center; color:#8e8e8e; font-size:13px; font-weight:600; margin-top:10px; }
+  .field-eye{ position:relative; }
+  .field-eye .eye{ position:absolute; right:12px; top:12px; cursor:pointer; font-size:16px; }
+  .remember{ display:flex; align-items:center; gap:8px; font-size:13px; margin:2px 0 14px; }
+  .remember input{ width:auto; margin:0; }
+  .dpick{ display:flex; gap:10px; justify-content:center; margin:14px 0; }
+  .dpick select{ flex:1; padding:10px 6px; border:1px solid var(--line); border-radius:8px; font-size:15px; }
+  .dpick-actions{ display:flex; justify-content:flex-end; gap:18px; font-weight:600; color:var(--ig-blue); }
+  .dpick-actions span{ cursor:pointer; }
+  .codeboxes{ display:flex; gap:8px; justify-content:center; margin:10px 0 16px; }
+  .codeboxes input{ width:42px; text-align:center; font-size:20px; padding:12px 0; }
+  .mail{ border:1px solid var(--line); border-radius:12px; padding:16px; background:#fff; margin-top:8px; }
+  .mail .from{ font-size:13px; color:var(--muted); }
+  .bigcode{ font-size:34px; font-weight:800; letter-spacing:6px; text-align:center; margin:14px 0;
+            color:#111; user-select:text; }
+  .gallery{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin:10px 0; }
+  .cell{ aspect-ratio:1; border-radius:6px; cursor:pointer; border:3px solid transparent; }
+  .cell.cam{ background:#222; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; }
+  .cell.pic{ background-size:cover; background-position:center; }
+  .cell.sel{ border-color:var(--ig-blue); }
+  .followrow{ display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid #f0f0f0; }
+  .av{ width:40px; height:40px; border-radius:50%; flex:0 0 40px; }
+  .followrow .nm{ flex:1; font-size:14px; }
+  .chk{ width:22px; height:22px; border-radius:50%; border:2px solid #c7c7c7; flex:0 0 22px; }
+  .chk.on{ background:var(--ig-blue); border-color:var(--ig-blue); position:relative; }
+  .chk.on:after{ content:"✓"; color:#fff; position:absolute; inset:0; display:flex; align-items:center;
+                 justify-content:center; font-size:13px; }
+  .toggle{ width:52px; height:30px; border-radius:30px; background:#ccc; position:relative; cursor:pointer; }
+  .toggle.on{ background:#4cd964; }
+  .toggle .knob{ width:26px; height:26px; background:#fff; border-radius:50%; position:absolute; top:2px; left:2px; transition:.15s; }
+  .toggle.on .knob{ left:24px; }
+  .popup{ position:absolute; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:5; }
+  .popup .card{ background:#fff; width:100%; border-radius:18px 18px 0 0; padding:18px; }
+  .popup .card.center{ margin:auto; width:84%; border-radius:14px; text-align:center; }
+  .small{ font-size:12px; color:var(--muted); }
+  /* coach panel */
+  .coach{ width:330px; color:#cfd3dc; }
+  .coach h1{ color:#fff; font-size:20px; margin:0 0 4px; }
+  .coach .tag{ color:#9aa0ad; font-size:13px; margin-bottom:14px; }
+  .meter{ background:#1b1e27; border:1px solid #2a2e3a; border-radius:12px; padding:12px 14px; margin:8px 0; font-size:13px; }
+  .meter b{ color:#fff; }
+  .rule{ display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; }
+  .rule .dot{ width:9px; height:9px; border-radius:50%; background:#3a3f4d; flex:0 0 9px; }
+  .rule.ok .dot{ background:#4cd964; } .rule.bad .dot{ background:#ff5a5a; } .rule.warn .dot{ background:#ffb03a; }
+  .timer{ font-variant-numeric:tabular-nums; }
+  /* result */
+  .verdict{ text-align:center; padding:24px 18px; }
+  .verdict .big{ font-size:54px; }
+  .verdict h2{ font-size:24px; margin:6px 0; }
+  .reason{ text-align:left; background:#fafafa; border-radius:10px; padding:10px 12px; margin:7px 0; font-size:13px; }
+  .reason.bad{ border-left:4px solid #ff5a5a; } .reason.warn{ border-left:4px solid #ffb03a; }
+  .reason.ok{ border-left:4px solid #4cd964; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+
+  <!-- 1 WELCOME -->
+  <div class="screen active" id="welcome">
+    <div class="center small" style="margin:2px 0 4px">English (US) ▾</div>
+    <div class="collage"><div class="c1"></div><div class="c2"></div><div class="c3"></div><div class="c4"></div><div class="c5"></div></div>
+    <h2 class="center" style="font-size:24px;margin:8px 0 4px">Join Instagram</h2>
+    <p class="sub center">Share what you're into with the people who get you.</p>
+    <div class="spacer"></div>
+    <button class="btn pill" data-trap="get_started">Get started</button>
+    <button class="btn ghost pill" onclick="go('login')">I already have a profile</button>
+    <div class="meta">∞ Meta</div>
+  </div>
+
+  <!-- 2 LOGIN -->
+  <div class="screen" id="login">
+    <div class="logo">Instagram</div>
+    <input placeholder="Username, email or mobile number">
+    <input placeholder="Password" type="password">
+    <button class="btn" data-trap="login_btn">Log in</button>
+    <div class="spacer"></div>
+    <button class="btn ghost" onclick="go('mobile')">Create new account</button>
+  </div>
+
+  <!-- 3 MOBILE -->
+  <div class="screen" id="mobile">
+    <h2>What's your mobile number?</h2>
+    <p class="sub">Enter the mobile number where you can be contacted.</p>
+    <input placeholder="Mobile number">
+    <button class="btn" data-trap="use_mobile">Next</button>
+    <button class="btn ghost" onclick="go('email')">Sign up with email</button>
+  </div>
+
+  <!-- 4 EMAIL -->
+  <div class="screen" id="email">
+    <h2>What's your email?</h2>
+    <p class="sub">Type it on the keyboard — no copy/paste.</p>
+    <input id="emailField" placeholder="Email" autocomplete="off">
+    <button class="btn" id="emailNext" disabled onclick="submitEmail()">Next</button>
+  </div>
+
+  <!-- 5 CODE SENT -->
+  <div class="screen" id="code_sent">
+    <h2>Enter the confirmation code</h2>
+    <p class="sub">We sent a 6-digit code to your email. Open Gmail to read it.</p>
+    <button class="btn ghost" onclick="go('gmail')">📧 Ouvrir Gmail</button>
+    <div class="spacer"></div>
+    <div class="codeboxes" id="codeBoxesPreview">
+      <input disabled><input disabled><input disabled><input disabled><input disabled><input disabled>
+    </div>
+  </div>
+
+  <!-- 6 GMAIL -->
+  <div class="screen" id="gmail">
+    <h2>📧 Gmail — Boîte de réception</h2>
+    <div class="mail">
+      <div class="from">Instagram &lt;security@mail.instagram.com&gt;</div>
+      <b>Your Instagram code</b>
+      <p class="sub" style="margin:8px 0 0">Lis le code — tu as le droit de le <b>copier</b> — puis reviens sur Instagram et entre-le.</p>
+      <div class="bigcode" id="otpShown">— — — — — —</div>
+      <button class="btn ghost" style="padding:9px" onclick="copyCode()">📋 Copier le code</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="go('code_enter')">⬅ Revenir sur Instagram</button>
+  </div>
+
+  <!-- 7 CODE ENTER -->
+  <div class="screen" id="code_enter">
+    <h2>Enter the confirmation code</h2>
+    <p class="sub">Entre le code — pour le code Gmail, le <b>copier-coller est autorisé</b> (long-press → Paste).</p>
+    <div class="codeboxes" id="codeBoxes"></div>
+    <button class="btn" id="codeNext" disabled onclick="submitCode()">Next</button>
+  </div>
+
+  <!-- 8 PASSWORD -->
+  <div class="screen" id="password">
+    <h2>Create a password</h2>
+    <p class="sub">Un mot de passe « réaliste » (prénom + événement + année). Tapé, jamais collé. Tape-en un, efface, retape-en un autre.</p>
+    <div class="field-eye">
+      <input id="pwField" placeholder="Password" autocomplete="off">
+      <span class="eye" onclick="togglePwEye()">👁️</span>
+    </div>
+    <label class="remember"><input type="checkbox" id="rememberChk" checked> Remember login info</label>
+    <button class="btn" id="pwNext" disabled onclick="submitPw()">Next</button>
+  </div>
+
+  <!-- 9 BIRTHDAY -->
+  <div class="screen" id="birthday">
+    <h2>What's your birthday?</h2>
+    <p class="sub">Use your own birthday, even if this account is for a business, a pet or something else. No one will see this unless you choose to share it.</p>
+    <div onclick="openDatePicker()" style="border:1px solid var(--line);border-radius:10px;padding:13px 12px;margin-bottom:14px;cursor:pointer">
+      <div class="small">Birthday</div><b id="bdayLabel" style="color:#8e8e8e">Tap to set the date</b>
+    </div>
+    <button class="btn" id="bdayNext" disabled onclick="go('name')">Next</button>
+  </div>
+
+  <!-- 10 NAME -->
+  <div class="screen" id="name">
+    <h2>What's your name?</h2>
+    <p class="sub">Une variante du nom du modèle (jamais le nom exact).</p>
+    <input id="nameField" placeholder="Full name" autocomplete="off">
+    <button class="btn" id="nameNext" disabled onclick="go('username')">Next</button>
+  </div>
+
+  <!-- 11 USERNAME -->
+  <div class="screen" id="username">
+    <h2>Create a username</h2>
+    <p class="sub">Une variante aussi — jamais le nom exact + chiffres au hasard.</p>
+    <input id="userField" placeholder="Username" autocomplete="off">
+    <button class="btn" id="userNext" disabled onclick="go('terms')">Next</button>
+  </div>
+
+  <!-- 12 TERMS -->
+  <div class="screen" id="terms">
+    <h2>Agree to Instagram's terms</h2>
+    <p class="sub">Prends le temps de « lire » (quelques secondes) avant d'accepter.</p>
+    <div class="spacer"></div>
+    <button class="btn" id="agreeBtn" onclick="submitAgree()">I agree</button>
+  </div>
+
+  <!-- 13 PHOTO -->
+  <div class="screen" id="photo">
+    <h2>Add a profile picture</h2>
+    <p class="sub">Obligatoire. Choisis une photo (pas la caméra, 1re cellule). Ne saute pas.</p>
+    <div class="gallery" id="gallery"></div>
+    <button class="btn" id="photoDone" disabled onclick="go('contacts')">Done</button>
+    <button class="btn link" data-trap="skip_photo">Skip</button>
+  </div>
+
+  <!-- 14 CONTACTS -->
+  <div class="screen" id="contacts">
+    <h2>Find your friends</h2>
+    <p class="sub">Sync contacts ? Sur la popup : <b>Don't allow</b>.</p>
+    <div class="spacer"></div>
+    <button class="btn" onclick="showContactsPopup()">Next</button>
+  </div>
+
+  <!-- 15 NOTIFS -->
+  <div class="screen" id="notifs">
+    <h2>Turn on notifications</h2>
+    <p class="sub">Active le toggle puis continue.</p>
+    <div style="display:flex;align-items:center;gap:12px;margin:14px 0">
+      <div class="toggle" id="notifToggle" onclick="toggleNotif()"><div class="knob"></div></div>
+      <span>All Instagram notifications</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="notifNext" disabled onclick="go('follow')">Next</button>
+  </div>
+
+  <!-- 16 FOLLOW -->
+  <div class="screen" id="follow">
+    <h2>Try following 5+ people</h2>
+    <p class="sub">Garde les pré-cochés et coche <b>3 à 7 de plus</b> (scroll), puis Follow.</p>
+    <div id="followList"></div>
+    <button class="btn" id="followBtn" onclick="submitFollow()">Follow</button>
+  </div>
+
+  <!-- COOKIES -->
+  <div class="screen" id="cookies">
+    <h2>Allow cookies?</h2>
+    <p class="sub">Lis un peu, descends, puis accepte.</p>
+    <div class="spacer"></div>
+    <button class="btn" onclick="finish()">Allow all cookies</button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="result"></div>
+
+  <!-- generic popup mount -->
+  <div id="popupMount"></div>
+</div>
+
+<!-- COACH PANEL -->
+<div class="coach">
+  <h1>🎓 Simulateur création Insta</h1>
+  <div class="tag">Entraînement VA — fais comme une grand-mère, lentement, sans tricher.</div>
+  <div class="meter">⏱️ Temps : <b class="timer" id="mTime">0:00</b> &nbsp;·&nbsp; cible <b>6–10 min</b><br>
+    📋 Étape : <b id="mStep">1/16 — Welcome</b></div>
+  <div class="meter">
+    <div class="rule" id="rPaste"><span class="dot"></span>Jamais copier-coller</div>
+    <div class="rule" id="rSpeed"><span class="dot"></span>Taper lentement au clavier</div>
+    <div class="rule" id="rCorrect"><span class="dot"></span>Faire des fautes et les corriger</div>
+    <div class="rule" id="rRetry"><span class="dot"></span>Mdp &amp; username : taper, effacer, retaper</div>
+    <div class="rule" id="rPhoto"><span class="dot"></span>Mettre une photo de profil</div>
+    <div class="rule" id="rAgree"><span class="dot"></span>« Lire » les CGU avant d'accepter</div>
+    <div class="rule" id="rContacts"><span class="dot"></span>Refuser les contacts (Don't allow)</div>
+    <div class="rule" id="rFollow"><span class="dot"></span>Suivre 3-7 comptes en plus</div>
+    <div class="rule" id="rTime"><span class="dot"></span>Durée ≥ 6 min</div>
+  </div>
+  <div class="small">Le simulateur te « bannit » si tu casses une règle dure (coller, sauter la photo, aller trop vite). Recommence jusqu'à un compte crédible.</div>
+  <button class="btn ghost" style="width:auto;margin-top:12px;padding:8px 16px" onclick="location.reload()">↻ Recommencer</button>
+</div>
+
+<script>
+// ---------- thresholds (rules we try to bypass with the script) ----------
+const RULES = {
+  BAN_TOTAL_SEC: 90,      // faster than this = obvious bot → BAN
+  WARN_TOTAL_SEC: 300,    // < 5 min = fragile (target 6-10 min)
+  MAX_CPS: 9,             // chars/sec above this in a field = "too fast"
+  MIN_AGREE_SEC: 2.5,     // tapped "I agree" faster than this = didn't read
+  FOLLOW_MIN_EXTRA: 3, FOLLOW_MAX_EXTRA: 7,
+};
+const PRE_CHECKED_FOLLOW = 5;
+
+const M = { start:Date.now(), paste:false, fastField:null, photo:false,
+            agreeSec:null, contacts:null, followExtra:0, banned:[], warns:[],
+            fields:{} };  // per-field behaviour stats
+const OTP = String(Math.floor(100000 + Math.random()*900000));
+let stepNo = 0;
+const STEPS = ["welcome","login","mobile","email","code_sent","gmail","code_enter",
+  "password","birthday","name","username","terms","photo","contacts","notifs","follow","cookies"];
+const STEP_LABEL = {welcome:"Welcome",login:"Login",mobile:"Mobile→email",email:"Email",
+  code_sent:"Code sent",gmail:"Gmail",code_enter:"Code",password:"Password",birthday:"Birthday",
+  name:"Name",username:"Username",terms:"I agree",photo:"Photo",contacts:"Contacts",
+  notifs:"Notifs",follow:"Follow",cookies:"Cookies"};
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const i = STEPS.indexOf(id); if(i>=0) stepNo=i;
+  document.getElementById('mStep').textContent = (stepNo+1)+"/16 — "+(STEP_LABEL[id]||id);
+  if(id==='terms') M._termsAt = Date.now();
+}
+
+// timer
+setInterval(()=>{
+  const s = Math.floor((Date.now()-M.start)/1000);
+  document.getElementById('mTime').textContent = Math.floor(s/60)+":"+String(s%60).padStart(2,'0');
+  setRule('rTime', s>=360?'ok':(s>=RULES.WARN_TOTAL_SEC?'warn':''));
+},1000);
+
+function setRule(id,cls){ const e=document.getElementById(id); if(!e)return;
+  e.className='rule'+(cls?(' '+cls):''); }
+
+// ---------- anti-paste + typing-speed instrumentation ----------
+function anyBack(){ return Object.values(M.fields).some(f=>f.back>0); }
+function instrument(el, onValid, opts={}){
+  const id = el.id || ('f'+Math.random().toString(36).slice(2));
+  const st = M.fields[id] = { keys:0, back:0, maxLen:0, clears:0, t0:null, prevLen:0, retype:!!opts.retype };
+  el.addEventListener('paste', e=>{ e.preventDefault();
+    M.paste=true; setRule('rPaste','bad'); flash(el,'#ffd5d5'); });
+  el.addEventListener('drop', e=>e.preventDefault());
+  el.addEventListener('keydown', e=>{ if(st.t0===null)st.t0=Date.now(); st.keys++;
+    if(e.key==='Backspace'||e.key==='Delete') st.back++; });
+  el.addEventListener('input', ()=>{
+    const len = el.value.length;
+    if(st.prevLen>=4 && len<=1) st.clears++;        // full wipe = type → efface → retape
+    st.maxLen=Math.max(st.maxLen,len); st.prevLen=len;
+    if(st.t0 && st.keys>2){
+      const cps = st.keys / Math.max(0.4,(Date.now()-st.t0)/1000);
+      if(cps>RULES.MAX_CPS){ M.fastField=id; setRule('rSpeed','warn'); }
+      else if(!M.fastField) setRule('rSpeed','ok');
+    }
+    if(anyBack()) setRule('rCorrect','ok');                       // made a correction = human
+    if(opts.retype) setRule('rRetry', st.clears>=1?'ok':'warn');  // hesitated on pw/username
+    onValid(el.value.trim());
+  });
+}
+function flash(el,c){ const o=el.style.background; el.style.background=c; setTimeout(()=>el.style.background=o,400); }
+
+// EMAIL
+const ef=document.getElementById('emailField');
+instrument(ef, v=>{ document.getElementById('emailNext').disabled = !/^\S+@\S+\.\S+$/.test(v); });
+function submitEmail(){ go('code_sent'); document.getElementById('otpShown').textContent='';
+  setTimeout(()=>document.getElementById('otpShown').textContent=OTP.split('').join(' '),50); }
+
+// CODE boxes
+function buildCodeBoxes(){
+  const wrap=document.getElementById('codeBoxes'); wrap.innerHTML='';
+  for(let i=0;i<6;i++){ const inp=document.createElement('input');
+    inp.maxLength=1; inp.inputMode='numeric';
+    // The Gmail code MAY be pasted (allowed per the VA doc) — fill all 6 boxes.
+    inp.addEventListener('paste',e=>{
+      const t=((e.clipboardData||window.clipboardData).getData('text')||'').replace(/\D/g,'').slice(0,6);
+      if(t.length===6){ e.preventDefault();
+        [...document.querySelectorAll('#codeBoxes input')].forEach((b,j)=>b.value=t[j]||'');
+        checkCode(); }
+    });
+    inp.addEventListener('input',()=>{ if(inp.value && inp.nextSibling) inp.nextSibling.focus(); checkCode(); });
+    wrap.appendChild(inp);
+  }
+}
+function copyCode(){
+  try{ navigator.clipboard.writeText(OTP); }catch(e){}
+  popup(`<b>✅ Code copié</b><p class="small" style="margin:8px 0">Reviens sur Instagram et colle-le dans le champ (ou tape-le).</p><button class="btn" onclick="closePopup()">OK</button>`, true);
+}
+function checkCode(){ const v=[...document.querySelectorAll('#codeBoxes input')].map(i=>i.value).join('');
+  document.getElementById('codeNext').disabled = v.length!==6; }
+function submitCode(){ const v=[...document.querySelectorAll('#codeBoxes input')].map(i=>i.value).join('');
+  if(v!==OTP){ alert('Code incorrect — relis bien dans Gmail.'); return; } go('password'); }
+
+// PASSWORD (retype expected: type one → erase → type another)
+instrument(document.getElementById('pwField'), v=>{
+  document.getElementById('pwNext').disabled = v.length<6;
+}, {retype:true});
+function submitPw(){ go('birthday'); }
+
+// PASSWORD eye
+function togglePwEye(){ const f=document.getElementById('pwField');
+  f.type = f.type==='password'?'text':'password'; }
+
+// BIRTHDAY — faithful "Set date" picker (month / day / year).
+// The picker offers a WIDE range of years (like the real one); the RULE checks
+// the VA picked 1980-1995.
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function openDatePicker(){
+  const mOpts=MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  let yOpts=''; for(let y=2008;y>=1950;y--) yOpts+=`<option value="${y}"${y===1990?' selected':''}>${y}</option>`;
+  let dOpts=''; for(let d=1;d<=28;d++) dOpts+=`<option value="${d}">${d}</option>`;
+  popup(`<b style="font-size:18px">Set date</b>
+    <div class="dpick">
+      <select id="dMonth">${mOpts}</select>
+      <select id="dDay">${dOpts}</select>
+      <select id="dYear">${yOpts}</select>
+    </div>
+    <div class="dpick-actions"><span onclick="closePopup()">CANCEL</span><span onclick="setDate()">SET</span></div>`, true);
+}
+function setDate(){
+  const m=+document.getElementById('dMonth').value, d=+document.getElementById('dDay').value,
+        y=+document.getElementById('dYear').value;
+  M.birthYear=y;
+  document.getElementById('bdayLabel').textContent=`${MONTHS[m-1]} ${d}, ${y}`;
+  document.getElementById('bdayLabel').style.color='#000';
+  document.getElementById('bdayNext').disabled=false;
+  closePopup();
+}
+
+// NAME / USERNAME
+instrument(document.getElementById('nameField'), v=>{ document.getElementById('nameNext').disabled=v.length<2; });
+instrument(document.getElementById('userField'), v=>{ document.getElementById('userNext').disabled=v.length<3; }, {retype:true});
+
+// TERMS
+function submitAgree(){ M.agreeSec=(Date.now()-(M._termsAt||Date.now()))/1000;
+  setRule('rAgree', M.agreeSec>=RULES.MIN_AGREE_SEC?'ok':'warn'); go('photo'); }
+
+// PHOTO gallery
+(function(){ const g=document.getElementById('gallery');
+  const cam=document.createElement('div'); cam.className='cell cam'; cam.textContent='📷';
+  cam.onclick=()=>{ M.banned.push('Tu as ouvert la CAMÉRA au lieu de choisir une photo.'); setRule('rPhoto','bad'); };
+  g.appendChild(cam);
+  const colors=['#e9a','#9be','#ad9','#fc8','#9ad','#caa','#8cd','#dab'];
+  for(let i=0;i<8;i++){ const c=document.createElement('div'); c.className='cell pic';
+    c.style.background='linear-gradient(135deg,'+colors[i%colors.length]+',#fff)';
+    c.onclick=()=>{ document.querySelectorAll('#gallery .cell').forEach(x=>x.classList.remove('sel'));
+      c.classList.add('sel'); M.photo=true; setRule('rPhoto','ok');
+      document.getElementById('photoDone').disabled=false; };
+    g.appendChild(c);
+  } })();
+
+// CONTACTS popup
+function showContactsPopup(){
+  popup(`<b>Allow Instagram to access your contacts?</b>
+    <button class="btn" style="margin-top:14px" onclick="contactsChoice('allow')">Allow</button>
+    <button class="btn ghost" onclick="contactsChoice('deny')">Don't allow</button>`);
+}
+function contactsChoice(c){ M.contacts=c; closePopup();
+  if(c==='deny'){ setRule('rContacts','ok'); go('notifs'); }
+  else{ M.banned.push("Tu as cliqué « Allow » sur les contacts (il fallait Don't allow)."); setRule('rContacts','bad'); go('notifs'); }
+}
+
+// NOTIFS
+function toggleNotif(){ const t=document.getElementById('notifToggle'); t.classList.toggle('on');
+  document.getElementById('notifNext').disabled=!t.classList.contains('on'); }
+
+// FOLLOW
+(function(){ const list=document.getElementById('followList');
+  const names=["Quotidien","lagrande_bouffe","laurythilleman","carlamoreau","kellyvedovelli",
+    "jessicathivenin","ulyces.co","lvprevention","booska.p","nasa","achrafhakimi","mcfly"];
+  names.forEach((n,idx)=>{ const pre=idx<PRE_CHECKED_FOLLOW;
+    const row=document.createElement('div'); row.className='followrow';
+    row.innerHTML=`<div class="av" style="background:linear-gradient(135deg,#${(Math.random()*0x999+0x666|0).toString(16)},#ddd)"></div>
+      <div class="nm">${n}</div><div class="chk ${pre?'on':''}"></div>`;
+    const chk=row.querySelector('.chk'); chk.dataset.pre=pre?'1':'0';
+    chk.onclick=()=>{ chk.classList.toggle('on'); };
+    list.appendChild(row);
+  }); })();
+function submitFollow(){
+  const chks=[...document.querySelectorAll('#followList .chk')];
+  const extra=chks.filter(c=>c.dataset.pre==='0' && c.classList.contains('on')).length;
+  const unchkPre=chks.filter(c=>c.dataset.pre==='1' && !c.classList.contains('on')).length;
+  M.followExtra=extra;
+  if(extra>=RULES.FOLLOW_MIN_EXTRA && extra<=RULES.FOLLOW_MAX_EXTRA) setRule('rFollow','ok');
+  else setRule('rFollow','warn');
+  go('cookies');
+}
+
+// POPUP helpers
+function popup(html, center){ document.getElementById('popupMount').innerHTML =
+  `<div class="popup"><div class="card ${center?'center':''}">${html}</div></div>`; }
+function closePopup(){ document.getElementById('popupMount').innerHTML=''; }
+
+// init
+buildCodeBoxes(); go('welcome');
+// traps: clicking the "wrong" buttons
+document.querySelectorAll('[data-trap]').forEach(b=>b.addEventListener('click',e=>{
+  const t=b.dataset.trap;
+  if(t==='skip_photo'){ M.banned.push("Tu as SKIP la photo de profil (obligatoire)."); setRule('rPhoto','bad'); finish(); return; }
+  popup(`<b>⛔ Mauvais bouton</b><p class="small" style="margin:8px 0">Une grand-mère ne clique pas là. Sur l'accueil on clique « I already have a profile », et on ne se connecte pas. Réessaie.</p>
+    <button class="btn" onclick="closePopup()">OK</button>`, true);
+}));
+
+// ---------- FINAL VERDICT ----------
+function finish(){
+  const sec = Math.floor((Date.now()-M.start)/1000);
+  let bans=[...M.banned], warns=[];
+  if(M.paste) bans.push("Tu as fait un COPIER-COLLER (interdit — tout au clavier).");
+  if(sec < RULES.BAN_TOTAL_SEC) bans.push(`Bien trop rapide (${fmt(sec)}). Un humain met 6-10 min.`);
+  else if(sec < RULES.WARN_TOTAL_SEC) warns.push(`Un peu rapide (${fmt(sec)}). Vise 6-10 min.`);
+  if(!M.photo && !bans.some(b=>b.includes('photo'))) bans.push("Pas de photo de profil.");
+  if(M.fastField) warns.push("Frappe trop rapide par moments — ralentis, tape touche par touche.");
+  if(M.agreeSec!==null && M.agreeSec<RULES.MIN_AGREE_SEC) warns.push("Tu as accepté les CGU trop vite (fais semblant de lire).");
+  if(M.followExtra<RULES.FOLLOW_MIN_EXTRA) warns.push("Pas assez de comptes suivis en plus (vise 3-7).");
+  // human-typing checks
+  const totalBack = Object.values(M.fields).reduce((a,f)=>a+f.back,0);
+  if(totalBack===0) warns.push("Aucune faute/correction — pas naturel. Fais quelques fautes au clavier puis corrige-les.");
+  const pw=M.fields['pwField'], us=M.fields['userField'];
+  if(pw && pw.clears<1) warns.push("Mot de passe : tu n'as pas hésité. Tape-en un, EFFACE tout, puis retape-en un autre.");
+  if(us && us.clears<1) warns.push("Username : tu n'as pas hésité. Tape-en un, EFFACE, puis retape-en un autre.");
+  if(M.birthYear && (M.birthYear<1980 || M.birthYear>1995)) warns.push(`Année de naissance ${M.birthYear} hors 1980-1995 (le modèle est une femme adulte).`);
+
+  const ok = bans.length===0;
+  let html = `<div class="verdict">`;
+  if(ok && warns.length===0){
+    html += `<div class="big">✅</div><h2 style="color:#2ca34a">Compte crédible !</h2>
+      <p class="small">Durée ${fmt(sec)} — bien joué, tu as tout fait comme un humain.</p>`;
+  } else if(ok){
+    html += `<div class="big">⚠️</div><h2 style="color:#c98a00">Compte fragile</h2>
+      <p class="small">Pas banni, mais à améliorer (durée ${fmt(sec)}).</p>`;
+  } else {
+    html += `<div class="big">❌</div><h2 style="color:#d33">COMPTE BANNI</h2>
+      <p class="small">Instagram t'a grillé. Durée ${fmt(sec)}.</p>`;
+  }
+  bans.forEach(b=> html+=`<div class="reason bad">⛔ ${b}</div>`);
+  warns.forEach(w=> html+=`<div class="reason warn">⚠️ ${w}</div>`);
+  if(ok && warns.length===0) html+=`<div class="reason ok">👍 Frappe au clavier, lent, photo mise, contacts refusés, follow ok.</div>`;
+  html += `<button class="btn" style="margin-top:16px" onclick="location.reload()">↻ Recommencer</button></div>`;
+  document.getElementById('result').innerHTML = html;
+  go('result');
+  document.getElementById('mStep').textContent = ok?'Terminé ✅':'Banni ❌';
+}
+function fmt(s){ return Math.floor(s/60)+" min "+String(s%60).padStart(2,'0'); }
+</script>
+</body>
+</html>
