@@ -4,3 +4,7 @@ __pycache__/
 phantom_jobs/
 .claude/
 phantom_jobs/*.mp4
+.venv/
+venv/
+music_jobs/
+*.log
