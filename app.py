@@ -21,6 +21,7 @@ import requests
 import jwt as pyjwt
 from flask import (Flask, jsonify, render_template, request, send_file,
                    redirect, session, url_for, make_response)
+from werkzeug.exceptions import NotFound, MethodNotAllowed
 
 ROOT = Path(__file__).parent
 
@@ -1908,23 +1909,40 @@ def dashboard_warmup():
 
 LANDING_DOMAINS = {"sophiemercier.fr", "www.sophiemercier.fr"}
 
+
+def _matches_app_route(path):
+    """True if `path` is served by a registered Flask route (dashboard, api,
+    static, img, /, login…). False means it's a public bio-link slug (/sophie…)."""
+    try:
+        adapter = app.url_map.bind(request.host)
+        adapter.match(path, method="GET")
+        return True
+    except MethodNotAllowed:
+        return True   # route exists, just a different HTTP method
+    except NotFound:
+        return False
+    except Exception:
+        return False
+
+
 @app.before_request
 def landing_domain_router():
-    """Serve public landing pages when request comes from sophiemercier.fr."""
+    """On the landing domain (sophiemercier.fr) the whole app is available:
+    real routes (dashboard, login, api, static, img, /) run normally, and only
+    paths that match no route are treated as public bio-link slugs → landing SPA.
+    (Client-side routes /go/… and /l/… also fall through to the SPA.)"""
     host = request.host.split(":")[0].lower()
     if host not in LANDING_DOMAINS:
-        return None  # normal conquerorz.co flow
-    # Let API, static and image-proxy routes reach their real handlers
-    if (request.path.startswith("/api/") or request.path.startswith("/static/")
-            or request.path.startswith("/img/")):
-        return None
-    # In-app browsers (Instagram/FB/Snap…) get an instant lightweight "escape"
-    # page that bounces them to the real browser before the heavy landing loads.
-    # Same links for everyone once in the real browser — no bot/moderation cloaking.
+        return None  # other hosts: normal flow
+    if _matches_app_route(request.path):
+        return None  # dashboard / api / static / img / login / …
+    # Public bio-link slug or client-side route → serve the landing SPA.
     ua = request.headers.get("User-Agent", "")
     seg = request.path.strip("/")
-    real_landing = seg and seg != "admin" and seg != "index.html" and not seg.startswith("go/")
+    real_landing = seg and not seg.startswith("go/") and not seg.startswith("l/")
     if real_landing and _is_inapp_browser(ua):
+        # In-app browsers (Instagram/FB/Snap…) get an instant lightweight escape
+        # page that bounces to the real browser. Same links for everyone — no cloaking.
         target = f"https://{request.host}{request.full_path}".rstrip("?")
         return make_response(_render_escape_page(target))
     # Serve as raw HTML (not Jinja2) to avoid template parsing issues
