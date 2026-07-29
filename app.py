@@ -2070,6 +2070,26 @@ def landing_image(photo_path):
         return "", 502
 
 
+@app.route("/api/dnsdebug")
+def api_dnsdebug():
+    import socket
+    host = "wmnirrzmmvleszmhodvr.supabase.co"
+    out = {}
+    try: out["resolv_conf"] = open("/etc/resolv.conf").read()[:600]
+    except Exception as e: out["resolv_conf_err"] = repr(e)[:200]
+    for label, args in [("any", (host, 443)), ("v4", (host, 443, socket.AF_INET)),
+                        ("ipapi_v4", ("ipapi.co", 443, socket.AF_INET))]:
+        try: out["gai_" + label] = str(socket.getaddrinfo(*args))[:250]
+        except Exception as e: out["gai_" + label + "_err"] = repr(e)[:200]
+    try:
+        r = requests.get("https://1.1.1.1/dns-query", params={"name": host, "type": "A"},
+                         headers={"accept": "application/dns-json"}, timeout=8)
+        out["doh_1111"] = r.json()
+    except Exception as e:
+        out["doh_1111_err"] = repr(e)[:200]
+    return jsonify(out)
+
+
 @app.route("/api/geo")
 def api_geo():
     """Return the visitor's approximate city for the 'Proche de…' chip."""
