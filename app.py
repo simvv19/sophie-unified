@@ -212,8 +212,8 @@ def api_login():
             json={"email": email, "password": password},
             timeout=10,
         )
-    except Exception:
-        return jsonify(error="Serveur d'authentification injoignable, réessaie"), 502
+    except Exception as e:
+        return jsonify(ok=False, debug=repr(e)[:400], sburl=SUPABASE_URL[:60]), 200
     if r.status_code != 200:
         if r.status_code in (400, 401):
             return jsonify(error="Email ou mot de passe incorrect"), 400
