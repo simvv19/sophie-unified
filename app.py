@@ -195,6 +195,41 @@ def login():
                            supabase_url=SUPABASE_URL,
                            supabase_key=SUPABASE_ANON_KEY)
 
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    """Server-side login: the browser only talks to us; WE call Supabase.
+    Fixes 'failed to fetch' on restricted networks (VA phones/proxies) that
+    can't reach supabase.co or the CDN directly."""
+    d = request.get_json(silent=True) or {}
+    email = (d.get("email") or "").strip().lower()
+    password = d.get("password") or ""
+    if not email or not password:
+        return jsonify(error="Email et mot de passe requis"), 400
+    try:
+        r = requests.post(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+            headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+            json={"email": email, "password": password},
+            timeout=10,
+        )
+    except Exception:
+        return jsonify(error="Serveur d'authentification injoignable, réessaie"), 502
+    if r.status_code != 200:
+        if r.status_code in (400, 401):
+            return jsonify(error="Email ou mot de passe incorrect"), 400
+        return jsonify(error="Erreur d'authentification"), r.status_code
+    data = r.json()
+    access = data.get("access_token")
+    refresh = data.get("refresh_token")
+    if not access:
+        return jsonify(error="Réponse d'authentification invalide"), 502
+    resp = make_response(jsonify(ok=True))
+    week = 60 * 60 * 24 * 7
+    resp.set_cookie("sb-access-token", access, max_age=week, path="/", samesite="Lax")
+    resp.set_cookie("sb-refresh-token", refresh or "", max_age=week * 4, path="/", samesite="Lax")
+    return resp
+
+
 @app.route("/logout")
 def logout():
     session.clear()

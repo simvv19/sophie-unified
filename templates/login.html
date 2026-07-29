@@ -17,7 +17,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg:#FAFAF9; --card:#FFFFFF; --border:#E8E6E1; --border-strong:#D4D1CB;
@@ -100,18 +99,7 @@
 </div>
 
 <script>
-const SB_URL = '{{ supabase_url }}';
-const SB_KEY = '{{ supabase_key }}';
-const sb = window.supabase.createClient(SB_URL, SB_KEY);
-
 const nextUrl = new URLSearchParams(location.search).get('next') || '/';
-
-function setTokenAndRedirect(session) {
-  const maxAge = 60 * 60 * 24 * 7; // 7 days
-  document.cookie = 'sb-access-token=' + session.access_token + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
-  document.cookie = 'sb-refresh-token=' + session.refresh_token + '; path=/; max-age=' + (maxAge * 4) + '; SameSite=Lax';
-  location.href = nextUrl;
-}
 
 function showError(msg) {
   const el = document.getElementById('error');
@@ -119,22 +107,10 @@ function showError(msg) {
   el.classList.add('on');
 }
 
-// Check if returning from OAuth or already has session
-(async () => {
-  // If we just logged out, sign out from Supabase JS too
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('next') === '/' || document.referrer.includes('/logout')) {
-    await sb.auth.signOut();
-    return;
-  }
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    setTokenAndRedirect(session);
-  }
-})();
-
-// Email/password login
-document.getElementById('loginBtn').addEventListener('click', async () => {
+// Server-side login: we only talk to our own origin (sophiemercier.fr).
+// The server calls Supabase, so this works even on networks that block
+// supabase.co or the CDN (VA phones / proxies) — no more "failed to fetch".
+async function doLogin() {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
   if (!email || !password) { showError('Email et mot de passe requis'); return; }
@@ -143,21 +119,25 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   card.classList.add('loading');
   document.getElementById('error').classList.remove('on');
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  card.classList.remove('loading');
-
-  if (error) {
-    showError(error.message === 'Invalid login credentials'
-      ? 'Email ou mot de passe incorrect'
-      : error.message);
-    return;
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const j = await r.json().catch(() => ({}));
+    card.classList.remove('loading');
+    if (!r.ok || !j.ok) { showError(j.error || 'Connexion impossible'); return; }
+    location.href = nextUrl;
+  } catch (e) {
+    card.classList.remove('loading');
+    showError('Connexion impossible, réessaie');
   }
-  setTokenAndRedirect(data.session);
-});
+}
 
-// Enter key on password field
+document.getElementById('loginBtn').addEventListener('click', doLogin);
 document.getElementById('password').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  if (e.key === 'Enter') doLogin();
 });
 document.getElementById('email').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('password').focus();
