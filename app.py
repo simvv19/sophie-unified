@@ -212,8 +212,8 @@ def api_login():
             json={"email": email, "password": password},
             timeout=10,
         )
-    except Exception as e:
-        return jsonify(ok=False, debug=repr(e)[:400], sburl=SUPABASE_URL[:60]), 200
+    except Exception:
+        return jsonify(error="Serveur d'authentification injoignable, réessaie"), 502
     if r.status_code != 200:
         if r.status_code in (400, 401):
             return jsonify(error="Email ou mot de passe incorrect"), 400
@@ -2068,26 +2068,6 @@ def landing_image(photo_path):
         return resp
     except Exception:
         return "", 502
-
-
-@app.route("/api/dnsdebug")
-def api_dnsdebug():
-    import socket
-    host = "wmnirrzmmvleszmhodvr.supabase.co"
-    out = {}
-    try: out["resolv_conf"] = open("/etc/resolv.conf").read()[:600]
-    except Exception as e: out["resolv_conf_err"] = repr(e)[:200]
-    for label, args in [("any", (host, 443)), ("v4", (host, 443, socket.AF_INET)),
-                        ("ipapi_v4", ("ipapi.co", 443, socket.AF_INET))]:
-        try: out["gai_" + label] = str(socket.getaddrinfo(*args))[:250]
-        except Exception as e: out["gai_" + label + "_err"] = repr(e)[:200]
-    try:
-        r = requests.get("https://1.1.1.1/dns-query", params={"name": host, "type": "A"},
-                         headers={"accept": "application/dns-json"}, timeout=8)
-        out["doh_1111"] = r.json()
-    except Exception as e:
-        out["doh_1111_err"] = repr(e)[:200]
-    return jsonify(out)
 
 
 @app.route("/api/geo")
